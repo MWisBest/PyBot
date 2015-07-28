@@ -1,0 +1,1 @@
+from .wotd import *

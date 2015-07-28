@@ -1,0 +1,14 @@
+# compiled files
+__pycache__/
+*.py[cod]
+
+# PyBot database files
+pickle.pybot
+pickle.pybot.*
+
+# BS Windows stuff
+Thumbs.db
+desktop.ini
+
+# API keys
+*apikey.txt
