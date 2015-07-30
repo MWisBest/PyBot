@@ -17,7 +17,7 @@
 ###########################################################################
 import __main__, time
 
-info = { "access" : 0, "version" : 2 }
+info = { "access" : 0, "version" : 1 }
 
 def handle( packet ):
 	try:
