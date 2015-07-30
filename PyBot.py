@@ -102,6 +102,7 @@ away = False
 slowConnect = True
 pyBotVersion = "Beta"
 eightBallResponses = [ "It is certain.", "Not a chance!", "Unclear. Try asking again?", "I think you already know the answer to that!", "Stop asking me questions! :@", "It's possible.", "Doubtful." ]
+CAPs = { "server" : [], "client" : [ "sasl" ], "enabled" : [], "actuallyUseThisCrap" : False }
 ## GLOBALS ##
 #############
 
@@ -940,23 +941,51 @@ def changeChannel( chan, recvfrom ):
 ##############
 ## CORE BOT ##
 def login():
-	global database, loggedIn, slowConnect
+	global database, loggedIn, slowConnect, CAPs
 	if slowConnect:
 		time.sleep( 2 )
+	if CAPs['actuallyUseThisCrap']:
+		sendPacket( makePacket( "CAP LS" ), forceDebugPrint=True )
 	sendPacket( makePacket( "NICK " + database['botInfo']['nick'] ), forceDebugPrint=True )
 	sendPacket( makePacket( "USER " + database['botInfo']['nick'] + " " + database['botInfo']['nick'] + " " + database['botInfo']['network'] + " :" + database['botInfo']['nick'] ), forceDebugPrint=True )
 	loggedIn = True
 
+def handleCAPs( packet ):
+	global CAPs, database, sock
+	print( "Handling CAP: " + str( packet ) )
+	if " LS :" in packet['rest']:
+		CAPs['server'] = packet['rest'].partition( " LS :" )[2].split()
+		for cap in CAPs['server']:
+			if cap in CAPs['client']:
+				CAPs['enabled'].append( cap )
+		if CAPs['enabled']:
+			sendPacket( makePacket( "CAP REQ :" + " ".join( CAPs['enabled'] ) ) )
+			return True
+		return False
+	elif " ACK :" in packet['rest']:
+		CAPs['enabled'] = packet['rest'].partition( " ACK :" )[2].split()
+		if "sasl" in CAPs['enabled']:
+			sendPacket( makePacket( "AUTHENTICATE PLAIN" ) )
+			data = sock.recv( 512 ).decode( errors="ignore" )
+			password = ( base64.b85decode( database['botInfo']['password'] ) ).decode( "utf-8" )
+			sendPacket( makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (database['botInfo']['nick'], database['botInfo']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
+			data = sock.recv( 2048 ).decode( errors="ignore" )
+			sendPacket( makePacket( "CAP END" ) )
+
 def chanJoin():
-	global database, chanJoined, chanJoinDelay, slowConnect
+	global database, chanJoined, chanJoinDelay, slowConnect, CAPs
 	if slowConnect:
 		time.sleep( 2 )
 	chanJoinDelay = chanJoinDelay + 2
 	if chanJoinDelay >= 1: #whatever
-		sendPacket( makePacket( "JOIN " + ",".join( database['botInfo']['channels'] ) ), forceDebugPrint=True )
+		# Auth should (try) to be done before join.
+		# It's not realistic to expect that to happen with NickServ/PM-based auth however,
+		# but let's give it a little head start at least.
 		password = ( base64.b85decode( database['botInfo']['password'] ) ).decode( "utf-8" )
-		if password != "":
+		if password != "" and "sasl" not in CAPs['enabled']:
 			sendPacket( makePacket( "PRIVMSG NickServ :IDENTIFY " + password ), forceDebugPrint=True )
+		
+		sendPacket( makePacket( "JOIN " + ",".join( database['botInfo']['channels'] ) ), forceDebugPrint=True )
 		chanJoined = True
 
 def init():
@@ -988,36 +1017,41 @@ init()	# Bot initiates here
 
 
 def main():
-	global sock, database, loggedIn, chanJoined, chanJoinDelay, slowConnect
+	global sock, database, loggedIn, chanJoined, chanJoinDelay, slowConnect, CAPs
 	while True:
 		try:
 			data = sock.recv( 8192 ).decode( errors="ignore" )
 			if len( data ) > 2:	# Don't parse small stuff
 				if data.count( "\n" ) > 1:	# More than 1 packet sent, most likely start connection
-					test = data.splitlines()
-					for x in test:
+					data = data.splitlines()
+					for x in data:
 						x = makePacket( x, inbound=True )
 						if database['globals']['debug']:
 							recvprint( x )
 						if x['command'] == "PING": # Some servers send this in the connection process, take care of that here... bastards
 							sendPong( x )
-					if ( not chanJoined ) and ( loggedIn ) and ( not " NOTICE " in x['raw'] ):
-						if slowConnect:
-							joinThread = threading.Thread( target=chanJoin() )
-							joinThread.start()
-						else:
-							chanJoin()
+						elif x['command'] == "CAP" and CAPs['actuallyUseThisCrap']:
+							handleCAPs( x )
+						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
+							if slowConnect:
+								joinThread = threading.Thread( target=chanJoin() )
+								joinThread.start()
+							else:
+								chanJoin()
 				else:
 					data = makePacket( data, inbound=True )
 					recvprint( data )
-					threading.Thread( target=handlePackets( data ) ).start()
-					#handlePackets( data )
-					if ( not chanJoined ) and ( loggedIn ) and ( not " NOTICE " in data['raw'] ):
-						if slowConnect:
-							joinThread = threading.Thread( target=chanJoin() )
-							joinThread.start()
-						else:
-							chanJoin()
+					if data['command'] == "CAP" and CAPs['actuallyUseThisCrap']:
+						handleCAPs( data )
+					else:
+						threading.Thread( target=handlePackets( data ) ).start()
+						#handlePackets( data )
+						if ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in data['raw'] ):
+							if slowConnect:
+								joinThread = threading.Thread( target=chanJoin() )
+								joinThread.start()
+							else:
+								chanJoin()
 		#except OSError:
 		#	errorprint( "Error! Attempting to reconect..." )
 		#	rebooted = 1
