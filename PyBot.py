@@ -94,6 +94,12 @@ warnprint = lambda x: termcolor.cprint( x.replace( "\r", "" ).replace( "\n", "" 
 ## GLOBALS ##
 # TODO: Stop using the global scope so much...
 database = {}
+# Allow custom database filename.
+# This allows one PyBot install to run on multiple servers (needs separate db for each).
+if len( sys.argv ) >= 2 and sys.argv[1].startswith( "pybot" ) and sys.argv[1].endswith( "pickle" ):
+	databaseName = sys.argv[1]
+else:
+	databaseName = "pybot.pickle"
 rebooted = 0
 loggedIn = False
 chanJoined = False
@@ -102,7 +108,7 @@ away = False
 slowConnect = True
 pyBotVersion = "Beta"
 eightBallResponses = [ "It is certain.", "Not a chance!", "Unclear. Try asking again?", "I think you already know the answer to that!", "Stop asking me questions! :@", "It's possible.", "Doubtful." ]
-CAPs = { "server" : [], "client" : [ "sasl" ], "enabled" : [], "actuallyUseThisCrap" : False }
+CAPs = { "server" : [], "client" : ( "sasl" ), "enabled" : [], "actuallyUseThisCrap" : True }
 ## GLOBALS ##
 #############
 
@@ -130,14 +136,14 @@ class PyBotUnpickler( pickle.Unpickler ):
 ##################################################
 ## FUNCTIONS TO SAVE AND LOAD THE DATABASE FILE ##
 def loadDatabase():
-	global database
-	with open( "pickle.pybot", "rb" ) as pybotfile:
+	global database, databaseName
+	with open( databaseName, "rb" ) as pybotfile:
 		with io.BytesIO( pybotfile.read() ) as pybotfilebytes:
 			database = ( PyBotUnpickler( pybotfilebytes ) ).load()
 
 def saveDatabase():
-	global database
-	with open( "pickle.pybot", "wb" ) as pybotfile:
+	global database, databaseName
+	with open( databaseName, "wb" ) as pybotfile:
 		pickle.dump( database, pybotfile, protocol=pickle.HIGHEST_PROTOCOL )
 ## FUNCTIONS TO SAVE AND LOAD THE DATABASE FILE ##
 ##################################################
@@ -163,8 +169,8 @@ try:
 		database['botInfo']['password'] = base64.b85encode( database['botInfo']['password'].encode( "utf-8" ), pad=True )
 		database['version'] = 3
 		saveDatabase()
-except IOError: # Create pickle.pybot on first start
-	database = { "accessList" : {}, "botInfo" : { "nick" : "", "password" : base64.b85encode( "".encode( "utf-8" ), pad=True ), "network" : "", "port" : 0, "channels" : list( "" ) }, "globals" : { "cc" : "!", "reverse" : False, "debug" : False }, "version" : 3 }
+except IOError: # Create pybot.pickle on first start
+	database = { "accessList" : {}, "botInfo" : { "nick" : "", "password" : base64.b85encode( "".encode( "utf-8" ), pad=True ), "network" : "", "port" : 0, "channels" : [] }, "globals" : { "cc" : "!", "reverse" : False, "debug" : False }, "version" : 3 }
 	print( colorama.Fore.CYAN )
 	database['botInfo']['network'] = input( "Please enter the address of the IRC network you want to connect to.\n" )
 	database['botInfo']['port'] = int( input( "Please enter the port while you're at it!\n" ) )
@@ -373,7 +379,7 @@ def sendPacket( packet, forceDebugPrint=False ):
 		warnprint( "Last packet did not send successfully. If this persists, check your connection and/or restart the bot." )
 
 def reboot():
-	global sock
+	global sock, pyBotVersion
 	sendPacket( makePacket( "QUIT :PyBot " + pyBotVersion + ". (Rebooting)" ) )
 	sock.shutdown( socket.SHUT_RDWR )
 	sock.close()
@@ -386,7 +392,7 @@ def reconnect():
 	init()
 
 def die():
-	global sock
+	global sock, pyBotVersion
 	sendPacket( makePacket( "QUIT :PyBot " + pyBotVersion + ". (Shutting Down)" ) )
 	sock.shutdown( socket.SHUT_RDWR )
 	sock.close()
@@ -516,7 +522,9 @@ def handlePackets( packet ):
 		elif not ranThroughHandler: # Try all the external handlers then.
 			externalHandlers( packet )
 			ranThroughHandler = True
-	elif packet['command'] == "PING": # Reply with PONG!
+	elif packet['command'] == "PING":
+		# Reply with PONG!
+		# Keep this at the bottom; response time for this is lowest priority
 		sendPong( packet )
 
 def externalHandlers( packet ):
@@ -537,7 +545,6 @@ def externalHandlers( packet ):
 ## SEND STUFFS ##
 def sendMessage( message, whereto, theuser=None, bypass=True ):
 	global database
-	# TODO: Why were we checking access?
 	if database['globals']['reverse']:
 		message = message[::-1]
 	sendPacket( makePacket( "PRIVMSG " + whereto + " :" + message ) )
@@ -952,7 +959,8 @@ def login():
 
 def handleCAPs( packet ):
 	global CAPs, database, sock
-	print( "Handling CAP: " + str( packet ) )
+	if database['globals']['debug']:
+		print( "Handling CAP: " + str( packet ) )
 	if " LS :" in packet['rest']:
 		CAPs['server'] = packet['rest'].partition( " LS :" )[2].split()
 		for cap in CAPs['server']:
@@ -961,7 +969,6 @@ def handleCAPs( packet ):
 		if CAPs['enabled']:
 			sendPacket( makePacket( "CAP REQ :" + " ".join( CAPs['enabled'] ) ) )
 			return True
-		return False
 	elif " ACK :" in packet['rest']:
 		CAPs['enabled'] = packet['rest'].partition( " ACK :" )[2].split()
 		if "sasl" in CAPs['enabled']:
@@ -971,6 +978,8 @@ def handleCAPs( packet ):
 			sendPacket( makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (database['botInfo']['nick'], database['botInfo']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
 			data = sock.recv( 2048 ).decode( errors="ignore" )
 			sendPacket( makePacket( "CAP END" ) )
+			return True
+	return False
 
 def chanJoin():
 	global database, chanJoined, chanJoinDelay, slowConnect, CAPs

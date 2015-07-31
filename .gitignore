@@ -3,8 +3,8 @@ __pycache__/
 *.py[cod]
 
 # PyBot database files
-pickle.pybot
-pickle.pybot.*
+pybot.pickle
+pybot.*.pickle
 
 # BS Windows stuff
 Thumbs.db
@@ -12,3 +12,7 @@ desktop.ini
 
 # API keys
 *apikey.txt
+
+# Server-specific .bats
+PyBot.storm.bat
+PyBot.esper.bat
