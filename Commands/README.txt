@@ -16,7 +16,7 @@ API Versions:
 
 1:
 It needs a dict variable named "info". The dict should contain:
-- "names": LIST (even if it's just one entry) of names which run this command.
+- "names": LIST (even if it's just one entry! seriously, it's FASTER!!!) of names which run this command.
 - "access": default access level required (0 should be fine for most things)
 - "version": version of the command API used.
 It should contain one function, titled "command".
