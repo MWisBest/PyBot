@@ -32,9 +32,8 @@ elif int( pyversion[0] ) == 3 and int( pyversion[1] ) < 4:
 def strbetween( s, first, last ):
 	try:
 		start = s.index( first ) + len( first )
-		end = s.index( last, start )
-		return s[start:end]
-	except ValueError:
+		return s[start:s.index( last, start )]
+	except:
 		return ""
 
 
@@ -42,11 +41,10 @@ def strbetween( s, first, last ):
 ## MODULAR IMPORTS ##
 # This is a pretty clever way to make the bot modular/extensible. :)
 def importFolder( foldername, dictaddedto="" ):
-	scriptDir = os.path.dirname( os.path.realpath( __file__ ) )
-	sys.path.insert( 1, scriptDir + os.sep + foldername + os.sep )
-	modulelist = os.listdir( scriptDir + os.sep + foldername + os.sep )
-	for modulefolder in modulelist:
-		if os.path.isdir( scriptDir + os.sep + foldername + os.sep + modulefolder + os.sep ):
+	folderpath = os.path.dirname( os.path.realpath( __file__ ) ) + os.sep + foldername + os.sep
+	sys.path.insert( 1, folderpath )
+	for modulefolder in os.listdir( folderpath ):
+		if os.path.isdir( folderpath + modulefolder + os.sep ):
 			try:
 				exec( "global " + modulefolder + "\nimport " + modulefolder ) # as much as I hate exec, i cant find another way to do this!
 				if dictaddedto != "":

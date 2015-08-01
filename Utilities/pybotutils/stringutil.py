@@ -20,7 +20,6 @@ import __main__
 def strbetween( s, first, last ):
 	try:
 		start = s.index( first ) + len( first )
-		end = s.index( last, start )
-		return s[start:end]
-	except ValueError:
+		return s[start:s.index( last, start )]
+	except:
 		return ""
