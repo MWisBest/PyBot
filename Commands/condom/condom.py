@@ -22,7 +22,7 @@ info = { "names" : [ "condom" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
 	try:
-		with open( "Commands" + os.sep + "condom" + os.sep + "condom.txt", "r" ) as condomtxt:
+		with open( os.path.dirname( os.path.realpath( __file__ ) ) + os.sep + "condom.txt", "r" ) as condomtxt:
 			__main__.sendMessage( random.choice( condomtxt.readlines() ), channel )
 		return True
 	except:

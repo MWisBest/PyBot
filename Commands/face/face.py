@@ -22,7 +22,7 @@ info = { "names" : [ "face" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
 	try:
-		with open( "Commands" + os.sep + "face" + os.sep + "face.txt", "r", encoding="utf-8" ) as facetxt:
+		with open( os.path.dirname( os.path.realpath( __file__ ) ) + os.sep + "face.txt", "r", encoding="utf-8" ) as facetxt:
 			__main__.sendMessage( random.choice( facetxt.readlines() ), channel )
 		return True
 	except:
