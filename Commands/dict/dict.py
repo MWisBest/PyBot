@@ -17,7 +17,7 @@
 ###########################################################################
 import __main__, requests
 
-info = { "names" : [ "dict", "dictionary", "define", "definition" ], "access" : 0, "version" : 1 }
+info = { "names" : [ "dict", "define", "dictionary", "definition" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
 	try:
