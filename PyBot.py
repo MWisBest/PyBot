@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import socket, sys, os, pickle, threading, random, hashlib, html.parser, platform, time, io, base64, importlib
+import socket, sys, os, pickle, threading, random, html.parser, platform, time, io, base64, importlib
 
 # Version check.
 pyversion = platform.python_version_tuple()
