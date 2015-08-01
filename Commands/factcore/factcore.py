@@ -21,7 +21,8 @@ info = { "names" : [ "factcore" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
 	try:
-		__main__.sendMessage( random.choice( open( "Commands" + os.sep + "factcore" + os.sep + "factcore.txt", "r" ).readlines() ), channel )
+		with open( "Commands" + os.sep + "factcore" + os.sep + "factcore.txt", "r" ) as txt:
+			__main__.sendMessage( random.choice( txt.readlines() ), channel )
 		return True
 	except:
 		return False

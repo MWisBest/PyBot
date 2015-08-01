@@ -22,7 +22,8 @@ info = { "names" : [ "condom" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
 	try:
-		__main__.sendMessage( random.choice( open( "Commands" + os.sep + "condom" + os.sep + "condom.txt", "r" ).readlines() ), channel )
+		with open( "Commands" + os.sep + "condom" + os.sep + "condom.txt", "r" ) as condomtxt:
+			__main__.sendMessage( random.choice( condomtxt.readlines() ), channel )
 		return True
 	except:
 		return False

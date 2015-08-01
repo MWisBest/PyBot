@@ -22,7 +22,8 @@ info = { "names" : [ "saying" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
 	try:
-		__main__.sendMessage( random.choice( open( "Commands" + os.sep + "saying" + os.sep + "saying.txt", "r" ).readlines() ), channel )
+		with open( "Commands" + os.sep + "saying" + os.sep + "saying.txt", "r" ) as sayingtxt:
+			__main__.sendMessage( random.choice( sayingtxt.readlines() ), channel )
 		return True
 	except:
 		return False

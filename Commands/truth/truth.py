@@ -23,23 +23,26 @@ info = { "names" : [ "truth" ], "access" : 0, "version" : 1 }
 def command( message, user, channel ):
 	try:
 		message = message.strip()
-		if " f" in message:	
-			lineToSend = random.choice( open( "Commands" + os.sep + "truth" + os.sep + "nick_female.txt", "r" ).readlines() )
+		lineToSend = ""
+		if " f" in message:
+			with open( "Commands" + os.sep + "truth" + os.sep + "nick_female.txt", "r" ) as nick_femaletxt:
+				lineToSend = random.choice( nick_femaletxt.readlines() )
 			lineToSend = lineToSend.replace( "$2", message.partition( " " )[0] )
-			__main__.sendMessage( lineToSend, channel )
 		elif " m" in message:
-			lineToSend = random.choice( open( "Commands" + os.sep + "truth" + os.sep + "nick_male.txt", "r" ).readlines() )
+			with open( "Commands" + os.sep + "truth" + os.sep + "nick_male.txt", "r" ) as nick_maletxt:
+				lineToSend = random.choice( nick_maletxt.readlines() )
 			lineToSend = lineToSend.replace( "$2", message.partition( " " )[0] )
-			__main__.sendMessage( lineToSend, channel )
 		elif "m" in message:
-			lineToSend = random.choice( open( "Commands" + os.sep + "truth" + os.sep + "self_male.txt", "r" ).readlines() )
+			with open( "Commands" + os.sep + "truth" + os.sep + "self_male.txt", "r" ) as self_maletxt:
+				lineToSend = random.choice( self_maletxt.readlines() )
 			lineToSend = lineToSend.replace( "$nick", user )
-			__main__.sendMessage( lineToSend, channel )
 		elif "f" in message:
-			lineToSend = random.choice( open( "Commands" + os.sep + "truth" + os.sep + "self_female.txt", "r" ).readlines() )
+			with open( "Commands" + os.sep + "truth" + os.sep + "self_female.txt", "r" ) as self_femaletxt:
+				lineToSend = random.choice( self_femaletxt.readlines() )
 			lineToSend = lineToSend.replace( "$nick", user )
+		if lineToSend != "":
 			__main__.sendMessage( lineToSend, channel )
-		if message == "":
+		elif message == "":
 			__main__.sendMessage( "Specify gender by using f or m. Example: truth m", channel )
 		return True
 	except:
