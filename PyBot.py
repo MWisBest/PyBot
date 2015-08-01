@@ -193,6 +193,8 @@ def sendprint( packet ):
 			senddebugprint( packet['raw'], packet['timestamp'] )
 		else:
 			toprint = ""
+			# Don't overwrite a part of packet
+			# TODO: Just replace newlines etc; spaces are valid at the ends!
 			packetrest = packet['rest'].rstrip()
 			user = database['botInfo']['nick']
 			if packet['command'] == "PRIVMSG":
@@ -239,6 +241,7 @@ def recvprint( packet ):
 		else:
 			toprint = ""
 			# Don't overwrite a part of packet
+			# TODO: Just replace newlines etc; spaces are valid at the ends!
 			packetrest = packet['rest'].rstrip()
 			# We use the user in just about everything here, just get it ahead of time and save some lines of code.
 			user = packet['host'].partition( "!" )[0][1:]
@@ -433,7 +436,9 @@ def handlePackets( packet ):
 				locfrom = privmsginfo[0]
 			else:
 				locfrom = user
-			message = privmsginfo[1].strip()
+			# Some commands (such as hash) NEED to parse extra spaces at the end of the message.
+			# TODO: Find a more elegant way that works for everybody.
+			message = privmsginfo[1].lstrip()
 			myAccess = getAccessLevel( user )
 			if len( message ) > 1 and message[0] == database['globals']['cc'] and myAccess >= 0:
 				message = message[1:]
@@ -452,8 +457,6 @@ def handlePackets( packet ):
 					sendMessage( "\u270B", locfrom )
 				elif args[0] == "die" and myAccess >= 3:
 					die()
-				elif args[0] in ["sha1", "sha2", "md5", "md4", "ripemd160", "whirlpool"]:
-					hash( args[0], args[2], locfrom )
 				elif args[0] in ["8", "8b", "8ball"]:
 					handleEightBall( user, locfrom )
 				elif args[0] == "ban" and myAccess >= 2:
@@ -655,48 +658,6 @@ def changeDebug( message, recvfrom ):
 
 ############################
 ## MISC BUILT-IN COMMANDS ##
-def hash( alg, data, recvfrom ):
-	if alg == "md5":
-		sendMessage( str( hashlib.md5( data.encode() ).hexdigest() ), recvfrom )
-	elif alg == "sha1":
-		sendMessage( str( hashlib.sha1( data.encode() ).hexdigest() ), recvfrom )
-	elif alg == "sha2":
-		data = data.partition( " " )
-		if data[0] == "224":
-			sendMessage( str( hashlib.sha224( data[2].encode() ).hexdigest() ), recvfrom )
-		elif data[0] == "256":
-			sendMessage( str( hashlib.sha256( data[2].encode() ).hexdigest() ), recvfrom )
-		elif data[0] == "384":
-			sendMessage( str( hashlib.sha384( data[2].encode() ).hexdigest() ), recvfrom )
-		elif data[0] == "512":
-			sendMessage( str( hashlib.sha512( data[2].encode() ).hexdigest() ), recvfrom )
-		else:
-			sendMessage( "Usage: sha2 [size: 224/256/384/512] [data to hash]", recvfrom )
-	elif alg == "md4":
-		try:
-			sendMessage( str( hashlib.new( "md4", data.encode() ).hexdigest() ), recvfrom )
-		except:
-			try:
-				sendMessage( str( hashlib.new( "MD4", data.encode() ).hexdigest() ), recvfrom )
-			except:
-				sendMessage( "MD4 is unsupported on the Python version, OpenSSL version, or Operating System the bot is being used on.", recvfrom )
-	elif alg == "ripemd160":
-		try:
-			sendMessage( str( hashlib.new( "ripemd160", data.encode() ).hexdigest() ), recvfrom )
-		except:
-			try:
-				sendMessage( str( hashlib.new( "RIPEMD160", data.encode() ).hexdigest() ), recvfrom )
-			except:
-				sendMessage( "RIPEMD160 is unsupported on the Python version, OpenSSL version, or Operating System the bot is being used on.", recvfrom )
-	elif alg == "whirlpool":
-		try:
-			sendMessage( str( hashlib.new( "whirlpool", data.encode() ).hexdigest() ), recvfrom )
-		except:
-			try:
-				sendMessage( str( hashlib.new( "WHIRLPOOL", data.encode() ).hexdigest() ), recvfrom )
-			except:
-				sendMessage( "WHIRLPOOL is unsupported on the Python version, OpenSSL version, or Operating System the bot is being used on.", recvfrom )
-
 def commandChar( args, recvfrom ):
 	global database
 	if len( args ) == 1:
