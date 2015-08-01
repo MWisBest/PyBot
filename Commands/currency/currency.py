@@ -27,7 +27,7 @@ def command( message, user, channel ):
 		codeFrom = message[1]
 		codeTo = message[2]
 		res = requests.get( "http://www.mobilecurrencyconverter.com/index.php?cur_n=" + amount + "&cur_f=" + codeFrom + "&cur_t=" + codeTo + "&cur_s=major&a=Y" )
-		rate = __main__.fixHTMLChars( __main__.strbetween( res.text, "<font class=\"cr_cv1\">(", ")</font>" ) )
+		rate = __main__.fixHTMLChars( __main__.strbetween( res.text, "</font><br/><font class=\"cr_cv1\">(", ")</font>" ) )
 		if "  " in rate:
 			while "  " in rate:
 				rate = rate.replace( "  ", " " )
