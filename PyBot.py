@@ -105,7 +105,6 @@ chanJoinDelay = 0
 away = False
 slowConnect = True
 pyBotVersion = "Beta"
-eightBallResponses = [ "It is certain.", "Not a chance!", "Unclear. Try asking again?", "I think you already know the answer to that!", "Stop asking me questions! :@", "It's possible.", "Doubtful." ]
 CAPs = { "server" : [], "client" : ( "sasl" ), "enabled" : [], "actuallyUseThisCrap" : True }
 ## GLOBALS ##
 #############
@@ -457,8 +456,6 @@ def handlePackets( packet ):
 					sendMessage( "\u270B", locfrom )
 				elif args[0] == "die" and myAccess >= 3:
 					die()
-				elif args[0] in ["8", "8b", "8ball"]:
-					handleEightBall( user, locfrom )
 				elif args[0] == "ban" and myAccess >= 2:
 					banUser( args[2], user, locfrom )
 				elif args[0] == "unban" and myAccess >= 2:
@@ -667,11 +664,6 @@ def commandChar( args, recvfrom ):
 		return True
 	sendMessage( "Usage: cc [X]", recvfrom )
 	return False
-
-def handleEightBall( theuser, recvfrom ):
-	global eightBallResponses
-	random.shuffle( eightBallResponses )
-	sendMessage( theuser + ": " + random.choice( eightBallResponses ), recvfrom )
 
 def toggleReverse( args, recvfrom ):
 	global database
