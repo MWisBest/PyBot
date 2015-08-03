@@ -507,7 +507,7 @@ def handlePackets( packet ):
 		# Reply with PONG!
 		# Keep this at the bottom; response time for this is lowest priority
 		sendPong( packet )
-	if not ranThroughHandler: # Try all the external handlers then.
+	elif not ranThroughHandler: # Try all the external handlers then.
 		externalHandlers( packet )
 		ranThroughHandler = True
 
