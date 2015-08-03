@@ -427,114 +427,118 @@ def handlePackets( packet ):
 	global database
 	ranThroughHandler = False # HACK: Call handlers once and only once!
 	if packet['command'] == "PRIVMSG":
-		channelmsg = ((packet['rest'])[0] == "#")
-		if True: #" PRIVMSG " + channel + " :" in packet: # Channel Message
-			privmsginfo = packet['rest'].split( " :", maxsplit=1 )
-			user = strbetween( packet['host'], ":", "!" )
-			if channelmsg:
-				locfrom = privmsginfo[0]
-			else:
-				locfrom = user
-			# Some commands (such as hash) NEED to parse extra spaces at the end of the message.
-			# TODO: Find a more elegant way that works for everybody.
-			message = privmsginfo[1].lstrip()
-			myAccess = getAccessLevel( user )
-			if len( message ) > 1 and message[0] == database['globals']['cc'] and myAccess >= 0:
-				message = message[1:]
-				args = list( message.partition( " " ) )
-				args[0] = args[0].lower()
-				#args = tuple( args )
-				if args[0] == "say":
-					sendMessage( args[2], locfrom, theuser=user, bypass=False )
-				elif args[0] == "me":
-					sendMe( args[2], locfrom )
-				elif args[0] == "sayto":
-					sendMessage( args[2].partition( " " )[2], args[2].partition( " " )[0], theuser=user, bypass=False )
-				elif args[0] == "meto":
-					sendMe( args[2].partition( " " )[2], args[2].partition( " " )[0] )
-				elif args[0] == "ono":
-					sendMessage( "\u270B", locfrom )
-				elif args[0] == "die" and myAccess >= 3:
-					die()
-				elif args[0] == "ban" and myAccess >= 2:
-					banUser( args[2], user, locfrom )
-				elif args[0] == "unban" and myAccess >= 2:
-					unbanUser( args[2], locfrom )
-				elif args[0] == "kick" and myAccess >= 2:
-					kickUser( args[2], user, locfrom )
-				elif args[0] == "away" and myAccess >= 2:
-					toggleAway( args[2], locfrom )
-				elif args[0] == "reboot" and myAccess >= 3:
-					reboot()
-				elif args[0] == "add" and myAccess >= 3:
-					addUser( args[2], locfrom, user )
-				elif args[0] == "remove" and myAccess >= 3:
-					removeUser( args[2], locfrom, user )
-				elif args[0] == "acclist":
-					listUsers( locfrom )
-				elif args[0] == "debug" and myAccess >= 3:
-					changeDebug( args[2], locfrom )
-				elif args[0] == "reverse" and myAccess >= 2:
-					toggleReverse( args[2], locfrom )
-				elif args[0] == "bot" and myAccess >= 2:
-					editBotInfo( args[2], locfrom )
-				elif args[0] == "cc" and myAccess >= 2:
-					commandChar( args[2], locfrom )
-				elif args[0] == "packet" and myAccess >= 3:
-					sendPacket( makePacket( args[2] ) )
-				elif args[0] in ["channel", "channels"] and myAccess >= 3:
-					changeChannel( args[2], locfrom )
-				elif args[0] == "ping":
-					sendMessage( "pong!", locfrom )
-				elif args[0] == "pong":
-					sendMessage( "FUCK YOU! ONLY I PONG!", locfrom )
-				elif args[0] in ["import", "reimport"] and myAccess >= 4:
-					reimportModule( args[2], locfrom )
-				elif args[0] == "exec" and myAccess >= 4 and database['globals']['debug']:
-					try:
-						exec( args[2] )
-					except: # who knows what the hell we're trying here, chances are somebody is fucking up if they even bother trying to use exec in the first place
-						print( "Unexpected error: " + str( sys.exc_info() ) )
-						sendMessage( "Yeah, you had an issue in there somewhere.", locfrom )
-# From this point and beyond, all commands should be the external ones
-				else: # see if it's in the command dict
-					try: # who knows what kind of shit people have in their commands folder
-						commandkeys = commanddict.keys()
-						for key in commandkeys:
-							try: # so we can continue through the loop on fuck ups
-								if args[0] in commanddict[key]['names'] and myAccess >= commanddict[key]['access']:
-									if commanddict[key]['version'] == 1:
-										eval( key + ".command( args[2], user, locfrom )" ) # I hate exec, but this should be secure enough
-									elif commanddict[key]['version'] == 2:
-										# Version 2 adds sending the command used to the command too.
-										# This allows a merge of 'rurban' and 'urban' for example.
-										eval( key + ".command( args[0], args[2], user, locfrom )" )
-									return # We don't need to keep iterating if we got what we need.
-							except: # fix your shit
-								continue # lets just keep going then.
-					except: # like i said.
-						return # get out of here.
-			elif not ranThroughHandler: # Unfortunately, there exists the possibility that an external handler wants access at this too. Run through them if this wasn't a cc message.
-				externalHandlers( packet )
-				ranThroughHandler = True
-		elif not ranThroughHandler: # Try all the external handlers then.
+		privmsginfo = packet['rest'].split( " :", maxsplit=1 )
+		user = strbetween( packet['host'], ":", "!" )
+		if ((packet['rest'])[0] == "#"): # channel message
+			locfrom = privmsginfo[0]
+		else:
+			locfrom = user
+		# Some commands (such as hash) NEED to parse extra spaces at the end of the message.
+		# TODO: Find a more elegant way that works for everybody.
+		message = privmsginfo[1].lstrip()
+		myAccess = getAccessLevel( user )
+		if len( message ) > 1 and message[0] == database['globals']['cc'] and myAccess >= 0:
+			message = message[1:]
+			args = list( message.partition( " " ) )
+			args[0] = args[0].lower()
+			if args[0] == "say":
+				sendMessage( args[2], locfrom, theuser=user, bypass=False )
+			elif args[0] == "me":
+				sendMe( args[2], locfrom )
+			elif args[0] == "sayto":
+				sendMessage( args[2].partition( " " )[2], args[2].partition( " " )[0], theuser=user, bypass=False )
+			elif args[0] == "meto":
+				sendMe( args[2].partition( " " )[2], args[2].partition( " " )[0] )
+			elif args[0] == "ono":
+				sendMessage( "\u270B", locfrom )
+			elif args[0] == "die" and myAccess >= 3:
+				die()
+			elif args[0] == "ban" and myAccess >= 2:
+				banUser( args[2], user, locfrom )
+			elif args[0] == "unban" and myAccess >= 2:
+				unbanUser( args[2], locfrom )
+			elif args[0] == "kick" and myAccess >= 2:
+				kickUser( args[2], user, locfrom )
+			elif args[0] == "away" and myAccess >= 2:
+				toggleAway( args[2], locfrom )
+			elif args[0] == "reboot" and myAccess >= 3:
+				reboot()
+			elif args[0] == "add" and myAccess >= 3:
+				addUser( args[2], locfrom, user )
+			elif args[0] == "remove" and myAccess >= 3:
+				removeUser( args[2], locfrom, user )
+			elif args[0] == "acclist":
+				listUsers( locfrom )
+			elif args[0] == "debug" and myAccess >= 3:
+				changeDebug( args[2], locfrom )
+			elif args[0] == "reverse" and myAccess >= 2:
+				toggleReverse( args[2], locfrom )
+			elif args[0] == "bot" and myAccess >= 2:
+				editBotInfo( args[2], locfrom )
+			elif args[0] == "cc" and myAccess >= 2:
+				commandChar( args[2], locfrom )
+			elif args[0] == "packet" and myAccess >= 3:
+				sendPacket( makePacket( args[2] ) )
+			elif args[0] in ["channel", "channels"] and myAccess >= 3:
+				changeChannel( args[2], locfrom )
+			elif args[0] == "ping":
+				sendMessage( "pong!", locfrom )
+			elif args[0] == "pong":
+				sendMessage( "FUCK YOU! ONLY I PONG!", locfrom )
+			elif args[0] in ["import", "reimport"] and myAccess >= 4:
+				reimportModule( args[2], locfrom )
+			elif args[0] == "exec" and myAccess >= 4 and database['globals']['debug']:
+				try:
+					exec( args[2] )
+				except:
+					# who knows what the hell we're trying here...
+					# chances are somebody is fucking up if they use exec in the first place
+					print( "Unexpected error: " + str( sys.exc_info() ) )
+					sendMessage( "Yeah, you had an issue in there somewhere.", locfrom )
+			elif externalCommands( args[0], args[2], user, locfrom, myAccess ):
+				# Found matching command; return.
+				return
+		elif not ranThroughHandler:
+			# Unfortunately, there exists the possibility that an external handler wants access at this too.
+			# Run through them if this wasn't a cc message.
 			externalHandlers( packet )
 			ranThroughHandler = True
 	elif packet['command'] == "PING":
 		# Reply with PONG!
 		# Keep this at the bottom; response time for this is lowest priority
 		sendPong( packet )
+	if not ranThroughHandler: # Try all the external handlers then.
+		externalHandlers( packet )
+		ranThroughHandler = True
+
+def externalCommands( cmdused, message, user, recvfrom, accessLevel ):
+	global commanddict
+	for key in commanddict.keys():
+		try: # so we can continue through the loop on fuck ups
+			if cmdused in commanddict[key]['names'] and accessLevel >= commanddict[key]['access']:
+				if commanddict[key]['version'] == 1:
+					# I hate eval, but this should be secure enough
+					eval( key + ".command( message, user, recvfrom )" )
+				elif commanddict[key]['version'] == 2:
+					# Version 2 adds sending the command used to the command too.
+					# This allows a merge of 'rurban' and 'urban' for example.
+					eval( key + ".command( cmdused, message, user, recvfrom )" )
+				# We don't need to keep iterating if we got what we need;
+				# Let the caller know we succeeded.
+				return True
+		except: # fix your shit
+			continue # lets just keep going then.
+	# Let the caller know we failed to find a matching command.
+	return False
 
 def externalHandlers( packet ):
-	try: # who knows what's gonna happen in this.
-		handlerkeys = handlerdict.keys()
-		for key in handlerkeys:
-			try: # so we can continue through the loop on fuck ups
-				eval( key + ".handle( packet )" ) # I hate exec, but this is all I can do dammit.
-			except: # fix your shit
-				continue # lets just keep going then.
-	except: # oh fuck this.
-		return # bye!
+	global handlerdict
+	for key in handlerdict.keys():
+		try: # so we can continue through the loop on fuck ups
+			# I hate eval, but this should be secure enough
+			eval( key + ".handle( packet )" )
+		except: # fix your shit
+			continue # lets just keep going then.
 ## MAIN PACKET HANDLER ##
 #########################
 
