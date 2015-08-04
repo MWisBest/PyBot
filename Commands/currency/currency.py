@@ -18,24 +18,21 @@
 ###########################################################################
 import __main__, requests
 
-info = { "names" : [ "currency", "curr", "money", "exchange" ], "access" : 0, "version" : 1 }
+info = { "names" : [ "currency", "curr" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
 		message = message.split( " " )
-		amount = message[0]
-		codeFrom = message[1]
-		codeTo = message[2]
-		res = requests.get( "http://www.mobilecurrencyconverter.com/index.php?cur_n=" + amount + "&cur_f=" + codeFrom + "&cur_t=" + codeTo + "&cur_s=major&a=Y" )
-		rate = __main__.fixHTMLChars( __main__.strbetween( res.text, "</font><br/><font class=\"cr_cv1\">(", ")</font>" ) )
-		if "  " in rate:
-			while "  " in rate:
-				rate = rate.replace( "  ", " " )
-		rate = rate.strip()
-		if rate != "" and rate != "1 = 0.00":
-			__main__.sendMessage( rate, channel )
+		if len( message ) != 3 or not message[0].isdigit():
+			__main__.sendMessage( "Usage: currency [amount] [from] [to]", recvfrom )
 		else:
-			__main__.sendMessage( "No conversion found, make sure you write the proper currency code.", channel )
-		return True
+			res = requests.get( "http://www.mobilecurrencyconverter.com/index.php?cur_n=" + message[0] + "&cur_f=" + message[1] + "&cur_t=" +  message[2] + "&cur_s=major&a=Y" )
+			conv = __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "<font class=\"cr_cv\">", "</font><br/>" ) )
+			if conv != "" and " = 0 " not in conv:
+				__main__.sendMessage( conv, recvfrom )
+				return True
+			else:
+				__main__.sendMessage( "Conversion unsuccessful! Make sure to use proper currency codes.", recvfrom )
+		return False
 	except:
 		return False
