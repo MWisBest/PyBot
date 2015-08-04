@@ -463,12 +463,8 @@ def handlePackets( packet ):
 				toggleAway( args[2], locfrom )
 			elif args[0] == "reboot" and myAccess >= 3:
 				reboot()
-			elif args[0] == "add" and myAccess >= 3:
-				addUser( args[2], locfrom, user )
-			elif args[0] == "remove" and myAccess >= 3:
-				removeUser( args[2], locfrom, user )
-			elif args[0] == "acclist":
-				listUsers( locfrom )
+			elif args[0] == "access":
+				accessHandler( args[2], user, locfrom )
 			elif args[0] == "debug" and myAccess >= 3:
 				changeDebug( args[2], locfrom )
 			elif args[0] == "reverse" and myAccess >= 2:
@@ -710,7 +706,69 @@ def toggleAway( message, recvfrom ):
 
 ########################
 ## PERMISSIONS STUFFS ##
-def addUser( args, recvfrom, user ):
+def accessHandler( args, user, recvfrom ):
+	args = args.partition( " " )
+	myAccess = getAccessLevel( user )
+	if args[0] in ["list", "add", "remove"]:
+		if args[0] == "list":
+			return accessListUsers( recvfrom )
+		elif args[0] == "add" and myAccess >= 3:
+			return accessAddUser( args[2], user, recvfrom )
+		elif args[0] == "remove" and myAccess >= 3:
+			return accessRemoveUser( args[2], user, recvfrom )
+		else:
+			sendMessage( "You don't have permission to do that!", recvfrom )
+			return False
+	else:
+		sendMessage( "Usage: access [list/add/remove] <args>", recvfrom )
+		return False
+
+def accessListUsers( recvfrom ):
+	global database
+	botdevs = []
+	developers = []
+	supports = []
+	trusteds = []
+	banneds = []
+	for user in database['accessList']:
+		if database['accessList'][user] == 4:
+			botdevs.append( user )
+		elif database['accessList'][user] == 3:
+			developers.append( user )
+		elif database['accessList'][user] == 2:
+			supports.append( user )
+		elif database['accessList'][user] == 1:
+			trusteds.append( user )
+		elif database['accessList'][user] == -1:
+			banneds.append( user )
+	
+	thelist = ""
+	
+	# Check that there's at least one entry, otherwise we end up with an extra e.x. "[Trusted], " without a user to match it
+	if len( botdevs ) > 0:
+		thelist = thelist + "[BotDev], ".join( sorted( botdevs, key=str.lower ) ) + "[BotDev], "
+	if len( developers ) > 0:
+		thelist = thelist + "[Developer], ".join( sorted( developers, key=str.lower ) ) + "[Developer], "
+	if len( supports ) > 0:
+		thelist = thelist + "[Support], ".join( sorted( supports, key=str.lower ) ) + "[Support], "
+	if len( trusteds ) > 0:
+		thelist = thelist + "[Trusted], ".join( sorted( trusteds, key=str.lower ) ) + "[Trusted], "
+	if len( banneds ) > 0:
+		thelist = thelist + "[Banned], ".join( sorted( banneds, key=str.lower ) ) + "[Banned], "
+	
+	# Chop off extra comma if necessary
+	if thelist[-2:] == ", ":
+		thelist = thelist[:-2]
+	
+	# Make sure we're actually sending something
+	if len( thelist ) <= 0:
+		sendMessage( "Access list appears to be empty!", recvfrom )
+		return False
+	else:
+		sendMessage( thelist, recvfrom )
+		return True
+
+def accessAddUser( args, user, recvfrom ):
 	global database
 	args = args.partition( " " )
 	if args[0] != "" and args[2] != "":
@@ -756,10 +814,10 @@ def addUser( args, recvfrom, user ):
 		sendMessage( args[0] + change + requestedAccessText, recvfrom )
 		saveDatabase()
 		return True
-	sendMessage( "Usage: add [nick] [rank]", recvfrom )
+	sendMessage( "Usage: access add [nick] [rank]", recvfrom )
 	return False
 
-def removeUser( args, recvfrom, user ):
+def accessRemoveUser( args, user, recvfrom ):
 	global database
 	if args != "":
 		currentAccess = getAccessLevel( args )
@@ -776,52 +834,7 @@ def removeUser( args, recvfrom, user ):
 			else:
 				sendMessage( "You are not allowed to remove a BOTDEV!", recvfrom )
 				return False
-	sendMessage( "Usage: remove [nick]", recvfrom )
-	return False
-
-def listUsers( recvfrom ):
-	global database
-	botdevs = []
-	developers = []
-	supports = []
-	trusteds = []
-	banneds = []
-	for user in database['accessList']:
-		if database['accessList'][user] == 4:
-			botdevs.append( user )
-		elif database['accessList'][user] == 3:
-			developers.append( user )
-		elif database['accessList'][user] == 2:
-			supports.append( user )
-		elif database['accessList'][user] == 1:
-			trusteds.append( user )
-		elif database['accessList'][user] == -1:
-			banneds.append( user )
-	
-	thelist = ""
-	
-	# Check that there's at least one entry, otherwise we end up with an extra e.x. "[Trusted], " without a user to match it
-	if len( botdevs ) > 0:
-		thelist = thelist + "[BotDev], ".join( sorted( botdevs, key=str.lower ) ) + "[BotDev], "
-	if len( developers ) > 0:
-		thelist = thelist + "[Developer], ".join( sorted( developers, key=str.lower ) ) + "[Developer], "
-	if len( supports ) > 0:
-		thelist = thelist + "[Support], ".join( sorted( supports, key=str.lower ) ) + "[Support], "
-	if len( trusteds ) > 0:
-		thelist = thelist + "[Trusted], ".join( sorted( trusteds, key=str.lower ) ) + "[Trusted], "
-	if len( banneds ) > 0:
-		thelist = thelist + "[Banned], ".join( sorted( banneds, key=str.lower ) ) + "[Banned], "
-	
-	# Chop off extra comma if necessary
-	if thelist[-2:] == ", ":
-		thelist = thelist[:-2]
-	
-	# Make sure we're actually sending something
-	if len( thelist ) > 0:
-		sendMessage( thelist, recvfrom )
-		return True
-	
-	sendMessage( "Access list appears to be empty!", recvfrom )
+	sendMessage( "Usage: access remove [nick]", recvfrom )
 	return False
 
 def getAccessLevel( user ):
