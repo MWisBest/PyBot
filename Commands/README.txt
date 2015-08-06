@@ -13,6 +13,7 @@ It NEEDS a dict variable named "info". This dict should contain an entry called 
 It should import "__main__" and use that to reference any variables and functions in the main script (i.e. __main__.sendMessage( "e.x." )).
 
 API Versions:
+MIN SUPPORTED: 1
 
 1:
 It needs a dict variable named "info". The dict should contain:

@@ -17,11 +17,11 @@
 ###########################################################################
 import __main__, time
 
-info = { "access" : 0, "version" : 1 }
+info = { "access" : 0, "packets" : [ "PRIVMSG" ], "version" : 2 }
 
 def handle( packet ):
 	try:
-		if packet['command'] == "PRIVMSG" and ((packet['rest'])[0] != "#"): # just parsing PM messages here
+		if packet['rest'][0] != "#": # just parsing PM messages here
 			message = packet['rest'].split( " :", maxsplit=1 )[1].strip()
 			if message[0] != "\x01" and message[-1] != "\x01": # CTCPs tend to use this, derp
 				return False

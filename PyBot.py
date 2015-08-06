@@ -333,7 +333,11 @@ def recvprint( packet ):
 # TODO: Move some of these to pybotutils
 def makePacket( data, inbound=False ):
 	packet = { "host" : "", "command" : "", "rest" : "", "raw" : data, "timestamp" : 0 }
+	
+	### SEC-NOTICE: We only send a packet at a time; there should NOT be any newlines in it! ###
+	# This is somewhat defensive: sendPacket takes care of this on its own too. #
 	data = data.replace( "\r", "" ).replace( "\n", "" )
+	
 	if inbound:
 		datalist = data.split( ' ', maxsplit=2 )
 		packet['timestamp'] = time.time()
@@ -360,7 +364,13 @@ def sendPacket( packet, forceDebugPrint=False ):
 	global sock
 	sent = True
 	# TODO: Fix this crap
+	
+	### SEC-NOTICE: We only send a packet at a time; there should NOT be any newlines in it! ###
+	# This is somewhat defensive: makePacket should've taken care of this for us already. #
+	packet['raw'] = packet['raw'].replace( "\r", "" ).replace( "\n", "" )
+	
 	bytespacket = ( packet['raw'] + "\r\n" ).encode( errors="ignore" )
+	
 	length = len( bytespacket )
 	amountSent = 0
 	while length != amountSent:
@@ -425,7 +435,7 @@ def fixHTMLCharsAdvanced( toFix ):
 ## MAIN PACKET HANDLER ##
 def handlePackets( packet ):
 	global database
-	ranThroughHandler = False # HACK: Call handlers once and only once!
+	runThroughHandlers = True # If WE handle a packet here, the handlers shouldn't.
 	if packet['command'] == "PRIVMSG":
 		privmsginfo = packet['rest'].split( " :", maxsplit=1 )
 		user = strbetween( packet['host'], ":", "!" )
@@ -445,14 +455,16 @@ def handlePackets( packet ):
 				sendMessage( args[2], locfrom, theuser=user, bypass=False )
 			elif args[0] == "me":
 				sendMe( args[2], locfrom )
-			elif args[0] == "sayto":
+			elif args[0] == "sayto" and myAccess >= 1:
 				sendMessage( args[2].partition( " " )[2], args[2].partition( " " )[0], theuser=user, bypass=False )
-			elif args[0] == "meto":
+			elif args[0] == "meto" and myAccess >= 1:
 				sendMe( args[2].partition( " " )[2], args[2].partition( " " )[0] )
-			elif args[0] == "ono":
-				sendMessage( "\u270B", locfrom )
-			elif args[0] == "die" and myAccess >= 3:
-				die()
+			elif args[0] == "ping":
+				sendMessage( "pong!", locfrom )
+			elif args[0] == "pong":
+				sendMessage( "FUCK YOU! ONLY I PONG!", locfrom )
+			elif args[0] == "access":
+				accessHandler( args[2], user, locfrom )
 			elif args[0] == "ban" and myAccess >= 2:
 				banUser( args[2], user, locfrom )
 			elif args[0] == "unban" and myAccess >= 2:
@@ -461,26 +473,22 @@ def handlePackets( packet ):
 				kickUser( args[2], user, locfrom )
 			elif args[0] == "away" and myAccess >= 2:
 				toggleAway( args[2], locfrom )
-			elif args[0] == "reboot" and myAccess >= 3:
-				reboot()
-			elif args[0] == "access":
-				accessHandler( args[2], user, locfrom )
-			elif args[0] == "debug" and myAccess >= 3:
-				changeDebug( args[2], locfrom )
 			elif args[0] == "reverse" and myAccess >= 2:
 				toggleReverse( args[2], locfrom )
 			elif args[0] == "bot" and myAccess >= 2:
 				editBotInfo( args[2], locfrom )
 			elif args[0] == "cc" and myAccess >= 2:
 				commandChar( args[2], locfrom )
-			elif args[0] == "packet" and myAccess >= 3:
-				sendPacket( makePacket( args[2] ) )
 			elif args[0] in ["channel", "channels"] and myAccess >= 3:
 				changeChannel( args[2], locfrom )
-			elif args[0] == "ping":
-				sendMessage( "pong!", locfrom )
-			elif args[0] == "pong":
-				sendMessage( "FUCK YOU! ONLY I PONG!", locfrom )
+			elif args[0] == "packet" and myAccess >= 3:
+				sendPacket( makePacket( args[2] ) )
+			elif args[0] == "die" and myAccess >= 3:
+				die()
+			elif args[0] == "reboot" and myAccess >= 3:
+				reboot()
+			elif args[0] == "debug" and myAccess >= 4:
+				changeDebug( args[2], locfrom )
 			elif args[0] in ["import", "reimport"] and myAccess >= 4:
 				reimportModule( args[2], locfrom )
 			elif args[0] == "exec" and myAccess >= 4 and database['globals']['debug']:
@@ -491,21 +499,16 @@ def handlePackets( packet ):
 					# chances are somebody is fucking up if they use exec in the first place
 					print( "Unexpected error: " + str( sys.exc_info() ) )
 					sendMessage( "Yeah, you had an issue in there somewhere.", locfrom )
-			elif externalCommands( args[0], args[2], user, locfrom, myAccess ):
-				# Found matching command; return.
-				return
-		elif not ranThroughHandler:
-			# Unfortunately, there exists the possibility that an external handler wants access at this too.
-			# Run through them if this wasn't a cc message.
-			externalHandlers( packet )
-			ranThroughHandler = True
+			else:
+				 externalCommands( args[0], args[2], user, locfrom, myAccess )
+			runThroughHandlers = False
 	elif packet['command'] == "PING":
 		# Reply with PONG!
 		# Keep this at the bottom; response time for this is lowest priority
 		sendPong( packet )
-	elif not ranThroughHandler: # Try all the external handlers then.
+		runThroughHandlers = False
+	if runThroughHandlers: # Try all the external handlers then.
 		externalHandlers( packet )
-		ranThroughHandler = True
 
 def externalCommands( cmdused, message, user, recvfrom, accessLevel ):
 	global commanddict
@@ -531,8 +534,9 @@ def externalHandlers( packet ):
 	global handlerdict
 	for key in handlerdict.keys():
 		try: # so we can continue through the loop on fuck ups
-			# I hate eval, but this should be secure enough
-			eval( key + ".handle( packet )" )
+			if packet['command'] in handlerdict[key]['packets']:
+				# I hate eval, but this should be secure enough
+				eval( key + ".handle( packet )" )
 		except: # fix your shit
 			continue # lets just keep going then.
 ## MAIN PACKET HANDLER ##
@@ -849,6 +853,7 @@ def getAccessLevel( user ):
 
 ###############
 ## OP STUFFS ##
+# TODO: Check NickServ registration on command users so we can implement these things here:
 def banUser( info, user, recvfrom ):
 	sendMessage( "NYI", recvfrom )
 	return False
@@ -974,7 +979,7 @@ def init():
 		loggedIn = False
 		chanJoinDelay = -1
 	
-	print( "Connecting to: " + database['botInfo']['network'] + ":" + str( database['botInfo']['port'] ) )
+	termcolor.cprint( "Connecting to: " + database['botInfo']['network'] + ":" + str( database['botInfo']['port'] ), "magenta" )
 	
 	connected = False
 	while not connected:
@@ -985,8 +990,8 @@ def init():
 		except TimeoutError:
 			print( "Timeout error! Retrying..." )
 	
-	print( "Connected." )
-	print( "Logging in..." )
+	termcolor.cprint( "Connected.", "magenta", attrs=['bold'] )
+	termcolor.cprint( "Logging in...", "magenta" )
 	login()
 
 

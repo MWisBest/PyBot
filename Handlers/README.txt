@@ -13,6 +13,7 @@ It should import "__main__" and use that to reference any variables and function
 
 
 API Versions:
+MIN SUPPORTED: 2
 
 1:
 It needs a dict variable named "info". The dict should contain:
@@ -21,5 +22,12 @@ It needs a dict variable named "info". The dict should contain:
 It should contain one function, titled "handle".
 That function should have one arg, 'packet'. This is a packet dict, see the main script for more info on packets.
 It should return True if the packet was handled, or False if it wasn't or if there was a problem.
+
+2:
+Version 1, with the following changes:
+info dict should now contain:
+- "access": default access level required (0 should be fine for most things)
+- "packets": LIST (even if it's just one entry! seriously, it's FASTER!!!) of packet types which this handler parses (e.x. PRIVMSG)
+- "version": version of the handler API used.
 
 SEE THE CTCP HANDLER FOR MORE REFERENCE, THANK YOU!

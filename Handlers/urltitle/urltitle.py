@@ -17,14 +17,14 @@
 ###########################################################################
 import __main__, re, threading, urllib.request####, requests ### see below urlopen stuff
 
-info = { "access" : 0, "version" : 1 }
+info = { "access" : 0, "packets" : [ "PRIVMSG" ], "version" : 2 }
 
 urlregex = re.compile( r"(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:[a-z]{2,13})(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:[a-z]{2,13})\b/?(?!@))))" )
 linkdata = ""
 
 def handle( packet ):
 	try:
-		if packet['command'] == "PRIVMSG" and ((packet['rest'])[0] == "#"): # just parsing channel messages here
+		if packet['rest'][0] == "#": # just parsing channel messages here
 			user = __main__.strbetween( packet['host'], ":", "!" )
 			if __main__.getAccessLevel( user ) < 0:
 				return False # Get out of here banned loser!
