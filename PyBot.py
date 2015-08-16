@@ -393,8 +393,7 @@ def reboot():
 	sendPacket( makePacket( "QUIT :PyBot " + pyBotVersion + ". (Rebooting)" ) )
 	sock.shutdown( socket.SHUT_RDWR )
 	sock.close()
-	python = sys.executable
-	os.execl( python, python, * sys.argv )
+	os.execl( sys.executable, sys.executable, * sys.argv )
 
 def reconnect():
 	global rebooted
@@ -452,7 +451,7 @@ def handlePackets( packet ):
 			args = list( message.partition( " " ) )
 			args[0] = args[0].lower()
 			if args[0] == "say":
-				sendMessage( args[2], locfrom, theuser=user, bypass=False )
+				sendMessage( args[2], locfrom )
 			elif args[0] == "me":
 				sendMe( args[2], locfrom )
 			elif args[0] == "sayto" and myAccess >= 1:
@@ -545,7 +544,7 @@ def externalHandlers( packet ):
 
 #################
 ## SEND STUFFS ##
-def sendMessage( message, whereto, theuser=None, bypass=True ):
+def sendMessage( message, whereto ):
 	global database
 	if database['globals']['reverse']:
 		message = message[::-1]
