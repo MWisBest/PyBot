@@ -17,21 +17,20 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "isitdown", "isup" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://isup.me/" + message )
-		status = __main__.fixHTMLChars( __main__.strbetween( res.text, "<div id=\"container\">", "<p>" ) ).strip()
-		#status = __main__.fixHTMLChars( __main__.strbetween( res.text, "target=\"_blank\">", "</div>" ) ).replace( "</a>", "" )
-		href = __main__.strbetween( status, "<a href=\"", "class=\"domain\">" )
+		status = fixHTMLChars( strbetween( requests.get( "http://isup.me/" + message ).text, "<div id=\"container\">", "<p>" ) ).strip()
+		href = strbetween( status, "<a href=\"", "class=\"domain\">" )
 		status = status.replace( "<a href=\"" + href + "class=\"domain\">", "" )
 		status = status.replace( "</a>", "" ).replace( "</span>", "" ).replace( "  ", " " )
 		if status != "":
-			__main__.sendMessage( status, channel )
+			__main__.sendMessage( status, recvfrom )
 		else:
-			__main__.sendMessage( "Something went wrong.", channel )
+			__main__.sendMessage( "Something went wrong.", recvfrom )
 		return True
 	except:
 		return False

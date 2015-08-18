@@ -16,6 +16,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, time
+from pybotutils import strbetween
 
 info = { "access" : 0, "packets" : [ "PRIVMSG" ], "version" : 2 }
 
@@ -25,7 +26,7 @@ def handle( packet ):
 			message = packet['rest'].split( " :", maxsplit=1 )[1].strip()
 			if message[0] != "\x01" and message[-1] != "\x01": # CTCPs tend to use this, derp
 				return False
-			user = __main__.strbetween( packet['host'], ":", "!" )
+			user = strbetween( packet['host'], ":", "!" )
 			if __main__.getAccessLevel( user ) < 0:
 				return False # Get out of here banned loser!
 			message = message[1:-1] # Just chop off the \x01s now

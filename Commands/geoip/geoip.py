@@ -16,41 +16,42 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import strbetween
 
 info = { "names" : [ "geoip" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
 		if message == "" or message == " ":
-			__main__.sendMessage( "Usage: geoip [ip.add.re.ss/domain.name]", channel )
+			__main__.sendMessage( "Usage: geoip [ip.add.re.ss/domain.name]", recvfrom )
 			return True
-		res = requests.get( "http://freegeoip.net/json/" + message )
-		ip = __main__.strbetween( res.text, "\"ip\":\"", "\"," )
-		latitude = __main__.strbetween( res.text, "\"latitude\":", ",\"" )
-		longitude = __main__.strbetween( res.text, "\"longitude\":", ",\"" )
-		#countryCode = __main__.strbetween( res.text, "\"country_code\":\"", "\"," )
-		countryName = __main__.strbetween( res.text, "\"country_name\":\"", "\"," )
-		#regionCode = __main__.strbetween( res.text, "\"region_code\":\"", "\"," )
-		regionName = __main__.strbetween( res.text, "\"region_name\":\"", "\"," )
-		city = __main__.strbetween( res.text, "\"city\":\"", "\"," )
-		#zipcode = __main__.strbetween( res.text, "\"zipcode\":\"", "\"," )
+		txt = requests.get( "http://freegeoip.net/json/" + message ).text
+		ip = strbetween( txt, "\"ip\":\"", "\"," )
+		latitude = strbetween( txt, "\"latitude\":", ",\"" )
+		longitude = strbetween( txt, "\"longitude\":", ",\"" )
+		#countryCode = strbetween( txt, "\"country_code\":\"", "\"," )
+		countryName = strbetween( txt, "\"country_name\":\"", "\"," )
+		#regionCode = strbetween( txt, "\"region_code\":\"", "\"," )
+		regionName = strbetween( txt, "\"region_name\":\"", "\"," )
+		city = strbetween( txt, "\"city\":\"", "\"," )
+		#zipcode = strbetween( txt, "\"zipcode\":\"", "\"," )
 		if ip != "": # IP has to be there if there was any useful info
 			toSend = "IP: " + ip
 			if city != "" and countryName != "" and regionName != "":
-				toSend = toSend + " | Location: "
+				toSend += " | Location: "
 				if city != "":
-					toSend = toSend + city + ", "
+					toSend += city + ", "
 				if regionName != "":
-					toSend = toSend + regionName + ", "
+					toSend += regionName + ", "
 				if countryName != "":
-					toSend = toSend + countryName
+					toSend += countryName
 			if latitude != "" and longitude != "":
-				toSend = toSend + " | Coordinates: " + latitude + "," + longitude
+				toSend += " | Coordinates: " + latitude + "," + longitude
 			if toSend == "IP: " + ip + " | Coordinates: 38,-97": # This is a bullshit result
 				toSend = message + " was not found."
-			__main__.sendMessage( toSend, channel )
+			__main__.sendMessage( toSend, recvfrom )
 		else:
-			__main__.sendMessage( message + " was not found.", channel )
+			__main__.sendMessage( message + " was not found.", recvfrom )
 		return True
 	except:
 		return False

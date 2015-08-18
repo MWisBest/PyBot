@@ -16,17 +16,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "pun", "joke" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://www.punoftheday.com/cgi-bin/randompun.pl" )
-		pun = __main__.fixHTMLChars( __main__.strbetween( res.text, "<p>", "</p>" ) )
-		if pun != "":
-			__main__.sendMessage( pun, channel )
-		else:
-			__main__.sendMessage( "No pun for you!", channel )
+		pun = fixHTMLChars( strbetween( requests.get( "http://www.punoftheday.com/cgi-bin/randompun.pl" ).text, "<p>", "</p>" ) )
+		if pun == "":
+			pun = "No pun for you!"
+		__main__.sendMessage( pun, recvfrom )
 		return True
 	except:
 		return False

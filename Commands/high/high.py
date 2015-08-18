@@ -17,13 +17,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "high", "thathigh", "th" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://www.thathigh.com/random" )
-		__main__.sendMessage( __main__.fixHTMLChars( __main__.strbetween( res.text, "<p>", "</p>" ) ), channel ) 
+		thehigh = fixHTMLChars( strbetween( requests.get( "http://www.thathigh.com/random" ).text, "<p>", "</p>" ) )
+		if thehigh == "":
+			thehigh = "When you can't find that high..."
+		__main__.sendMessage( thehigh, recvfrom ) 
 		return True
 	except:
 		return False

@@ -17,22 +17,22 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "zipcode", "zipinfo", "zip" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://www.zip-info.com/cgi-local/zipsrch.exe?ac=ac&tz=tz&zip=" + message + "&Go=Go" )
-		txt = __main__.fixHTMLChars( res.text )
-		city = __main__.strbetween( txt, "</th></tr><tr><td align=center>", "</font>" )
-		state = __main__.strbetween( txt, "</font></td><td align=center>", "</font></td><td align=center>" )
-		acode = __main__.strbetween( txt, "<td align=center>" + message + "</font></td><td align=center>", "</font>" )
-		timezone = __main__.strbetween( txt, acode + "</font></td><td align=center>", "</font></td><td align=center>Yes</font></td></tr></table>" )
+		txt = fixHTMLChars( requests.get( "http://www.zip-info.com/cgi-local/zipsrch.exe?ac=ac&tz=tz&zip=" + message + "&Go=Go" ).text )
+		city = strbetween( txt, "</th></tr><tr><td align=center>", "</font>" )
+		state = strbetween( txt, "</font></td><td align=center>", "</font></td><td align=center>" )
+		acode = strbetween( txt, "<td align=center>" + message + "</font></td><td align=center>", "</font>" )
+		timezone = strbetween( txt, acode + "</font></td><td align=center>", "</font></td><td align=center>Yes</font></td></tr></table>" )
 
 		if zip != "":
-			__main__.sendMessage( "Zip: " + message + " | City: " + city + " | State: " + state + " | Area Code: " + acode + " | Time Zone: " + timezone, channel )
+			__main__.sendMessage( "Zip: " + message + " | City: " + city + " | State: " + state + " | Area Code: " + acode + " | Time Zone: " + timezone, recvfrom )
 		else:
-			__main__.sendMessage( message + " was not found.", channel )
+			__main__.sendMessage( message + " was not found.", recvfrom )
 		return True
 	except:
 		return False

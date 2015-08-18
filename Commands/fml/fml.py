@@ -16,13 +16,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "fml", "fmylife" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://m.fmylife.com/random" )
-		__main__.sendMessage( __main__.fixHTMLChars( __main__.strbetween( res.text, "<p class=\"text\">", "</p>" ) ), channel )
+		thefml = fixHTMLChars( strbetween( requests.get( "http://m.fmylife.com/random" ).text, "<p class=\"text\">", "</p>" ) )
+		if thefml == "":
+			thefml = "Today, PyBot couldn't find an FML. FML"
+		__main__.sendMessage( thefml, recvfrom )
 		return True
 	except:
 		return False

@@ -16,28 +16,32 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import strbetween
 
 info = { "names" : [ "steamcalc", "steamdb" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "https://steamdb.info/calculator/?player=" + message )
-		playername = __main__.strbetween( res.text, "<title>", " · " )
+		message = message.strip()
+		if message == "":
+			message = user
+		txt = requests.get( "https://steamdb.info/calculator/?player=" + message ).text
+		playername = strbetween( txt, "<title>", " · " )
 		if playername != "Error":
 			construct = playername + ": "
-			table = __main__.strbetween( res.text, "<p><br>[list]", "[/list]</p>" )
-			worth = __main__.strbetween( table, "[*][b]Worth:[/b] ", "</p>" )
+			table = strbetween( txt, "<p><br>[list]", "[/list]</p>" )
+			worth = strbetween( table, "[*][b]Worth:[/b] ", "</p>" )
 			if worth != "":
-				construct = construct + worth
-			owned = __main__.strbetween( table, "<p>[*][b]Games owned:[/b] ", "</p>" )
-			notplayed = __main__.strbetween( table, "<p>[*][b]Games not played:[/b] ", " [i](" )
+				construct += worth
+			owned = strbetween( table, "<p>[*][b]Games owned:[/b] ", "</p>" )
+			notplayed = strbetween( table, "<p>[*][b]Games not played:[/b] ", " [i](" )
 			if owned != "" and notplayed != "":
 				played = str( int( owned ) - int( notplayed ) )
-				construct = construct + " | " + played + "/" + owned + " Games Played/Owned"
-			__main__.sendMessage( construct, channel )
+				construct += " | " + played + "/" + owned + " Games Played/Owned"
+			__main__.sendMessage( construct, recvfrom )
 			return True
 		else:
-			__main__.sendMessage( message + " was not found.", channel )
+			__main__.sendMessage( message + " was not found.", recvfrom )
 			return False
 		return False
 	except:

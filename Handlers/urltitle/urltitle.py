@@ -16,6 +16,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, re, threading, urllib.request####, requests ### see below urlopen stuff
+from pybotutils import fixHTMLCharsAdvanced, strbetween
 
 info = { "access" : 0, "packets" : [ "PRIVMSG" ], "version" : 2 }
 
@@ -25,7 +26,7 @@ linkdata = ""
 def handle( packet ):
 	try:
 		if packet['rest'][0] == "#": # just parsing channel messages here
-			user = __main__.strbetween( packet['host'], ":", "!" )
+			user = strbetween( packet['host'], ":", "!" )
 			if __main__.getAccessLevel( user ) < 0:
 				return False # Get out of here banned loser!
 			msgsplit = packet['rest'].split( " :", maxsplit=1 )
@@ -85,14 +86,14 @@ def normalLink( link ):
 		if ourdata == "":
 			return ""
 		# Some places have decided 'hey lets use whitespaces in titles for no particular reason'; fuck them
-		urlstitle = __main__.strbetween( ourdata, "<title>", "</title>" ).strip()
+		urlstitle = strbetween( ourdata, "<title>", "</title>" ).strip()
 		if urlstitle != "":
-			return "\x02URL:\x02 " + __main__.fixHTMLCharsAdvanced( urlstitle )
+			return "\x02URL:\x02 " + fixHTMLCharsAdvanced( urlstitle )
 		elif "<TITLE>" in ourdata:
 			# fuckin pricks using caps can fuck off, seriously fuck them too
-			urlstitle = __main__.strbetween( ourdata, "<TITLE>", "</TITLE>" ).strip() # see above
+			urlstitle = strbetween( ourdata, "<TITLE>", "</TITLE>" ).strip() # see above
 			if urlstitle != "":
-				return "\x02URL:\x02 " + __main__.fixHTMLCharsAdvanced( urlstitle )
+				return "\x02URL:\x02 " + fixHTMLCharsAdvanced( urlstitle )
 		return ""
 	except:
 		return ""
@@ -133,29 +134,29 @@ def imgur( link ):
 		# chop off excess area so we only search the relevant parts of the page
 		# this makes us kind of vulnerable to page changes, but it really speeds things up, so it's a worthy compromise.
 		# don't check if this is empty, we'll find that out later; speed priority is for the majority case: a proper gallery post.
-		tosearch = __main__.strbetween( ourdata, "widgetFactory.mergeConfig('gallery',", "</script>" )
+		tosearch = strbetween( ourdata, "widgetFactory.mergeConfig('gallery',", "</script>" )
 		
-		ups = __main__.strbetween( tosearch, ",\"ups\":", ",\"" )
-		downs = __main__.strbetween( tosearch, ",\"downs\":", ",\"" )
+		ups = strbetween( tosearch, ",\"ups\":", ",\"" )
+		downs = strbetween( tosearch, ",\"downs\":", ",\"" )
 		if ups == "" or downs == "":
 			raise BreakoutException
 		# try and get points.
-		#points = format( int( __main__.strbetween( tosearch, ",\"points\":", ",\"" ) ), "," )
+		#points = format( int( strbetween( tosearch, ",\"points\":", ",\"" ) ), "," )
 		# If we can't, just gtfo
 		#if points == "":
 		#	raise BreakoutException
 		
 		# try and get views.
-		views = format( int( __main__.strbetween( tosearch, ",\"views\":", ",\"" ) ), "," )
+		views = format( int( strbetween( tosearch, ",\"views\":", ",\"" ) ), "," )
 		# again, if we can't, just gtfo
 		if views == "":
 			raise BreakoutException
 		
 		# NOTE: This gets something that does not match the actual title...
 		## try and get 'official' title.
-		##title = __main__.fixHTMLCharsAdvanced( __main__.strbetween( tosearch, ",\"title\":\"", "\",\"" ) )
+		##title = fixHTMLCharsAdvanced( strbetween( tosearch, ",\"title\":\"", "\",\"" ) )
 		# INSTEAD: Grab what the browser uses.
-		title = __main__.fixHTMLCharsAdvanced( __main__.strbetween( ourdata, "<meta property=\"og:title\" content=\"", "\"/>" ) )
+		title = fixHTMLCharsAdvanced( strbetween( ourdata, "<meta property=\"og:title\" content=\"", "\"/>" ) )
 		
 		
 		# and again, if we can't, just gtfo
@@ -174,9 +175,9 @@ def youtube( link ):
 		
 		ourdata = fetchLinkData( youtubelink, 3.75 )
 		
-		title = __main__.fixHTMLCharsAdvanced( __main__.strbetween( ourdata, "<meta itemprop=\"name\" content=\"", "\">" ) )
+		title = fixHTMLCharsAdvanced( strbetween( ourdata, "<meta itemprop=\"name\" content=\"", "\">" ) )
 		
-		views = format( int( __main__.strbetween( ourdata, "<meta itemprop=\"interactionCount\" content=\"", "\">" ) ), "," )
+		views = format( int( strbetween( ourdata, "<meta itemprop=\"interactionCount\" content=\"", "\">" ) ), "," )
 		if views == "":
 			raise BreakoutException
 		

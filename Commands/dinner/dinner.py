@@ -17,18 +17,19 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "dinner", "supper" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://whatthefuckshouldimakefordinner.com/" )
-		meal = __main__.fixHTMLChars( __main__.strbetween( res.text, "\" target=\"_blank\">", "</a></dt>" ) )
-		url = __main__.fixHTMLChars( __main__.strbetween( res.text, "<dt><a href=\"", "\" target=\"_blank\">" ) )
-		if meal != "":
-			__main__.sendMessage( meal + " - " + url, channel )
+		txt = requests.get( "http://whatthefuckshouldimakefordinner.com/" ).text
+		meal = fixHTMLChars( strbetween( txt, "\" target=\"_blank\">", "</a></dt>" ) )
+		url = fixHTMLChars( strbetween( txt, "<dt><a href=\"", "\" target=\"_blank\">" ) )
+		if meal != "" and url != "":
+			__main__.sendMessage( meal + " - " + url, recvfrom )
 		else:
-			__main__.sendMessage( "You will starve!", channel )
+			__main__.sendMessage( "You will starve!", recvfrom )
 		return True
 	except:
 		return False

@@ -17,6 +17,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLCharsAdvanced, strbetween
 
 info = { "names" : [ "currency", "curr" ], "access" : 0, "version" : 1 }
 
@@ -26,8 +27,8 @@ def command( message, user, recvfrom ):
 		if len( message ) != 3 or not message[0].isdigit():
 			__main__.sendMessage( "Usage: currency [amount] [from] [to]", recvfrom )
 		else:
-			res = requests.get( "http://www.mobilecurrencyconverter.com/index.php?cur_n=" + message[0] + "&cur_f=" + message[1] + "&cur_t=" +  message[2] + "&cur_s=major&a=Y" )
-			conv = __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "<font class=\"cr_cv\">", "</font><br/>" ) )
+			txt = requests.get( "http://www.mobilecurrencyconverter.com/index.php?cur_n=" + message[0] + "&cur_f=" + message[1] + "&cur_t=" +  message[2] + "&cur_s=major&a=Y" ).text
+			conv = fixHTMLCharsAdvanced( strbetween( txt, "<font class=\"cr_cv\">", "</font><br/>" ) )
 			if conv != "" and " = 0 " not in conv:
 				__main__.sendMessage( conv, recvfrom )
 				return True

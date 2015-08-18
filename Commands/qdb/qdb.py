@@ -17,16 +17,17 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLCharsAdvanced, strbetween
 
 info = { "names" : [ "qdb", "bash" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://qdb.us/random/" )
-		quoteNum = __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "\">#", "</a>" ) )
-		quote =  __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "<span class=qt id=qt" + quoteNum , "</span>" ) )
+		txt = requests.get( "http://qdb.us/random/" ).text
+		quoteNum = fixHTMLCharsAdvanced( strbetween( txt, "\">#", "</a>" ) )
+		quote = fixHTMLCharsAdvanced( strbetween( txt, "<span class=qt id=qt" + quoteNum , "</span>" ) )
 		quote = quote.replace( "<br />", " / " )
-		__main__.sendMessage( "Quote #" + quoteNum + ": " + quote, channel )
+		__main__.sendMessage( "Quote #" + quoteNum + ": " + quote, recvfrom )
 		return True
 	except:
 		return False

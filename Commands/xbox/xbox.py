@@ -17,19 +17,20 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "xbox", "xb" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "https://live.xbox.com/en-US/Profile?gamertag=" + message )
-		gamerscore = __main__.fixHTMLChars( __main__.strbetween( res.text, "<div class=\"gamerscore\">", "</div>" ) )
-		lastseen = __main__.fixHTMLChars( __main__.strbetween( res.text, "<div class=\"presence\">", "</div>" ) )
-		gamertag = __main__.fixHTMLChars( __main__.strbetween( res.text, "<title>", "&#39;s Profile" ) ) #get proper case of gamertag
+		txt = requests.get( "https://live.xbox.com/en-US/Profile?gamertag=" + message ).text
+		gamerscore = fixHTMLChars( strbetween( txt, "<div class=\"gamerscore\">", "</div>" ) )
+		lastseen = fixHTMLChars( strbetween( txt, "<div class=\"presence\">", "</div>" ) )
+		gamertag = fixHTMLChars( strbetween( txt, "<title>", "&#39;s Profile" ) ) #get proper case of gamertag
 		if gamerscore != "":
-			__main__.sendMessage( gamertag + " :: Status: " + lastseen + " :: Gamerscore: " + gamerscore, channel )
+			__main__.sendMessage( gamertag + " :: Status: " + lastseen + " :: Gamerscore: " + gamerscore, recvfrom )
 		else:
-			__main__.sendMessage( message + " was not found.", channel )
+			__main__.sendMessage( message + " was not found.", recvfrom )
 		return True
 	except:
 		return False

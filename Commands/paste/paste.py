@@ -16,20 +16,20 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, json, requests
+from pybotutils import strbetween
 
 info = { "names" : [ "paste", "kdepaste", "pastebin", "kdepaste", "pastie" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		json_data = { "title" : channel, "data" : message, "language" : "text", "expire" : "31536000", "private" : "true" }
-		res = requests.post( "https://paste.kde.org/api/json/create", data=json_data )
-		print( str( res.text ) )
-		pasteid = __main__.strbetween( res.text, "\"id\": \"", "\"," )
-		pastehash = __main__.strbetween( res.text, "\"hash\": \"", "\"" )
+		json_data = { "title" : recvfrom, "data" : message, "language" : "text", "expire" : "31536000", "private" : "true" }
+		txt = requests.post( "https://paste.kde.org/api/json/create", data=json_data ).text
+		pasteid = strbetween( txt, "\"id\": \"", "\"," )
+		pastehash = strbetween( txt, "\"hash\": \"", "\"" )
 		if pasteid != "" and pastehash != "":
-			__main__.sendMessage( "https://paste.kde.org/" + pasteid + "/" + pastehash, channel )
+			__main__.sendMessage( "https://paste.kde.org/" + pasteid + "/" + pastehash, recvfrom )
 		else:
-			__main__.sendMessage( "Paste unsuccessful. Try again later!", channel )
+			__main__.sendMessage( "Paste unsuccessful. Try again later!", recvfrom )
 		return True
 	except:
 		return False

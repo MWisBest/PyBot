@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import socket, sys, os, pickle, threading, random, html.parser, platform, time, io, base64, importlib
+import socket, sys, os, pickle, threading, random, platform, time, io, base64, importlib
 
 # Version check.
 pyversion = platform.python_version_tuple()
@@ -25,16 +25,6 @@ if int( pyversion[0] ) < 3:
 elif int( pyversion[0] ) == 3 and int( pyversion[1] ) < 4:
 	print( "PyBot requires Python 3.4 or higher. Sorry!" )
 	exit()
-
-
-## This is used pretty much everywhere you can think of, so I'll just put it up top. ##
-# TODO: Switch everything to use pybotutils
-def strbetween( s, first, last ):
-	try:
-		start = s.index( first ) + len( first )
-		return s[start:s.index( last, start )]
-	except:
-		return ""
 
 
 #####################
@@ -61,6 +51,8 @@ def importFolder( foldername, dictaddedto="" ):
 importFolder( "Modules" )
 
 # Utilities is meant to distinguish between a 'homegrown' module and a module written by somebody else.
+# Current required utilities are:
+# - pybotutils
 importFolder( "Utilities" )
 
 # Commands are run on request, e.x. "!fml"
@@ -296,7 +288,7 @@ def recvprint( packet ):
 				else:
 					givetext = " removes "
 					tofromtext = " from "
-				modeassigned = strbetween( chanRest[2], chanRest[2][0], " " )
+				modeassigned = pybotutils.strbetween( chanRest[2], chanRest[2][0], " " )
 				if len( modeassigned ) == 1: # Only one mode assigned, easy-peasy
 					# We could have less code here if we just axe this ==1 part and
 					# use the bottom looping version (which would still work fine here),
@@ -375,7 +367,7 @@ def sendPacket( packet, forceDebugPrint=False ):
 	amountSent = 0
 	while length != amountSent:
 		try:
-			amountSent = amountSent + sock.send( bytespacket )
+			amountSent += sock.send( bytespacket )
 		except:
 			sent = False
 	# Set the packet's timestamp to the time when we actually finished sending it.
@@ -406,26 +398,6 @@ def die():
 	sock.shutdown( socket.SHUT_RDWR )
 	sock.close()
 	exit()
-
-def fixHTMLChars( toFix ):
-	h = html.parser.HTMLParser()
-	toFix = toFix.replace( "&nbsp;", " " ) # Rather than have a weird character, use a regular fkin space
-	return h.unescape( toFix )
-
-def fixHTMLCharsAdvanced( toFix ):
-	h = html.parser.HTMLParser()
-	toFix = toFix.replace( "&nbsp;", " " ) # Rather than have a weird character, use a regular fkin space
-	toFix = h.unescape( toFix )
-	# replace linebreaks with spaces
-	toFix = toFix.replace( "<br/>", " " ).replace( "\n", " " ).replace( "\r", " " )
-	if "<a href=" in toFix:
-		toFix = toFix.replace( "</a>", "" )
-		while "<a href=" in toFix:
-			toReplace = strbetween( toFix, "<a href=", ">" )
-			toFix = toFix.replace( "<a href=" + toReplace + ">", "" )
-	while "  " in toFix: # We don't want two or more spaces used for breaks
-		toFix = toFix.replace( "  ", " " )
-	return toFix
 ## UTILS ##
 ###########
 
@@ -437,7 +409,7 @@ def handlePackets( packet ):
 	runThroughHandlers = True # If WE handle a packet here, the handlers shouldn't.
 	if packet['command'] == "PRIVMSG":
 		privmsginfo = packet['rest'].split( " :", maxsplit=1 )
-		user = strbetween( packet['host'], ":", "!" )
+		user = pybotutils.strbetween( packet['host'], ":", "!" )
 		if ((packet['rest'])[0] == "#"): # channel message
 			locfrom = privmsginfo[0]
 		else:
@@ -585,12 +557,12 @@ def reimportModule( args, recvfrom ):
 				# What happens though is we actually end up with TWO modules: foldername (--> __init__.py), and foldername.foldername (--> foldername.py)
 				# Problem? Doing "foldername = importlib.reload( foldername )" doesn't reload the 'foldername.foldername' module, which is what we actually want to reload!!
 				# Fortunately, we can take care of that ourselves by first doing "foldername.foldername = importlib.reload( foldername.foldername )" and THEN reload foldername.
-				code = code + name + "." + name + " = importlib.reload( " + name + "." + name + " )\n"
-				code = code + name + " = importlib.reload( " + name + " )\n"
+				code += name + "." + name + " = importlib.reload( " + name + "." + name + " )\n"
+				code += name + " = importlib.reload( " + name + " )\n"
 			else:
 				# ...if it's NOT a reimport, we can just use the regular import statement and we're good to go.
-				code = code + "import " + name + "\n"
-			code = code + type + "dict[name] = " + name + ".info\n"
+				code += "import " + name + "\n"
+			code += type + "dict[name] = " + name + ".info\n"
 			exec( code )
 		
 		# TODO: If command/handler isn't provided, and the module is already in either commanddict or handlerdict, autodetermine 'args[0]'
@@ -749,15 +721,15 @@ def accessListUsers( recvfrom ):
 	
 	# Check that there's at least one entry, otherwise we end up with an extra e.x. "[Trusted], " without a user to match it
 	if len( botdevs ) > 0:
-		thelist = thelist + "[BotDev], ".join( sorted( botdevs, key=str.lower ) ) + "[BotDev], "
+		thelist += "[BotDev], ".join( sorted( botdevs, key=str.lower ) ) + "[BotDev], "
 	if len( developers ) > 0:
-		thelist = thelist + "[Developer], ".join( sorted( developers, key=str.lower ) ) + "[Developer], "
+		thelist += "[Developer], ".join( sorted( developers, key=str.lower ) ) + "[Developer], "
 	if len( supports ) > 0:
-		thelist = thelist + "[Support], ".join( sorted( supports, key=str.lower ) ) + "[Support], "
+		thelist += "[Support], ".join( sorted( supports, key=str.lower ) ) + "[Support], "
 	if len( trusteds ) > 0:
-		thelist = thelist + "[Trusted], ".join( sorted( trusteds, key=str.lower ) ) + "[Trusted], "
+		thelist += "[Trusted], ".join( sorted( trusteds, key=str.lower ) ) + "[Trusted], "
 	if len( banneds ) > 0:
-		thelist = thelist + "[Banned], ".join( sorted( banneds, key=str.lower ) ) + "[Banned], "
+		thelist += "[Banned], ".join( sorted( banneds, key=str.lower ) ) + "[Banned], "
 	
 	# Chop off extra comma if necessary
 	if thelist[-2:] == ", ":
@@ -957,7 +929,7 @@ def chanJoin():
 	global database, chanJoined, chanJoinDelay, slowConnect, CAPs
 	if slowConnect:
 		time.sleep( 2 )
-	chanJoinDelay = chanJoinDelay + 2
+	chanJoinDelay += 2
 	if chanJoinDelay >= 1: #whatever
 		# Auth should (try) to be done before join.
 		# It's not realistic to expect that to happen with NickServ/PM-based auth however,

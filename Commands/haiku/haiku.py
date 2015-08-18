@@ -17,15 +17,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLCharsAdvanced, strbetween
 
 info = { "names" : [ "haiku" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://prestopnik.com/emo_haiku/" )
-		haiku =  __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "<div align=center><BR><BR>", "<BR><BR><BR><BR></div>" ) )
-		haiku = haiku.replace( "<BR>", " " )
-		__main__.sendMessage( haiku, channel )
+		thehaiku = fixHTMLCharsAdvanced( strbetween( requests.get( "http://prestopnik.com/emo_haiku/" ).text, "<div align=center><BR><BR>", "<BR><BR><BR><BR></div>" ) ).replace( "<BR>", " " )
+		if thehaiku == "":
+			thehaiku = "I should probably. Write an actual haiku. For error message."
+		__main__.sendMessage( thehaiku, recvfrom )
 		return True
 	except:
 		return False

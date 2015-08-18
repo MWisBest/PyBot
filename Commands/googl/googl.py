@@ -16,16 +16,17 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests, pybotutils
+from pybotutils import googlshort
 
 info = { "names" : [ "googl" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		link = pybotutils.googlshort( message )
+		link = googlshort( message )
 		if link != "":
-			__main__.sendMessage( link, channel )
+			__main__.sendMessage( link, recvfrom )
 		else:
-			__main__.sendMessage( "Fix your shit.", channel )
+			__main__.sendMessage( "Fix your shit.", recvfrom )
 		return True
 	except:
 		return False

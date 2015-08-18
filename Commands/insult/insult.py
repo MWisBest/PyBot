@@ -17,17 +17,17 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLCharsAdvanced, strbetween
 
 info = { "names" : [ "insult" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://www.randominsults.net/" )
-		insult = __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "<strong><i>", "</i></strong>" ) )
+		insult = fixHTMLCharsAdvanced( strbetween( requests.get( "http://www.randominsults.net/" ).text, "<strong><i>", "</i></strong>" ) )
 		if insult != "":
-			__main__.sendMessage( message + ": " + insult, channel )
+			__main__.sendMessage( message + ": " + insult, recvfrom )
 		else:
-			__main__.sendMessage( "There was a problem. Fix your shit.", channel )
+			__main__.sendMessage( "There was a problem. Fix your shit.", recvfrom )
 		return True
 	except:
 		return False

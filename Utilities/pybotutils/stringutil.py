@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import __main__
+import __main__, html.parser
 
 def strbetween( s, first, last ):
 	try:
@@ -23,3 +23,22 @@ def strbetween( s, first, last ):
 		return s[start:s.index( last, start )]
 	except:
 		return ""
+
+
+def fixHTMLChars( toFix ):
+	toFix = toFix.replace( "&nbsp;", " " ) # Rather than have a weird character, use a regular fkin space
+	return html.parser.HTMLParser().unescape( toFix )
+
+def fixHTMLCharsAdvanced( toFix ):
+	toFix = toFix.replace( "&nbsp;", " " ) # Rather than have a weird character, use a regular fkin space
+	toFix = html.parser.HTMLParser().unescape( toFix )
+	# replace linebreaks with spaces
+	toFix = toFix.replace( "<br/>", " " ).replace( "\n", " " ).replace( "\r", " " )
+	if "<a href=" in toFix:
+		toFix = toFix.replace( "</a>", "" )
+		while "<a href=" in toFix:
+			toReplace = strbetween( toFix, "<a href=", ">" )
+			toFix = toFix.replace( "<a href=" + toReplace + ">", "" )
+	while "  " in toFix: # We don't want two or more spaces used for breaks
+		toFix = toFix.replace( "  ", " " )
+	return toFix

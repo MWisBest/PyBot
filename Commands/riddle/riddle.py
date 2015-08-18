@@ -17,19 +17,19 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests, threading
+from pybotutils import fixHTMLCharsAdvanced, strbetween
 
 info = { "names" : [ "riddle" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://www.randomriddles.com/" )
-		riddle = __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "<strong><i>", " <a ;" ) )
-		answer = __main__.fixHTMLCharsAdvanced( __main__.strbetween( res.text, "alert('", "')\"" ) )
-		if riddle != "":
-			__main__.sendMessage( riddle, channel )
-		if answer != "":
+		txt = requests.get( "http://www.randomriddles.com/" ).text
+		riddle = fixHTMLCharsAdvanced( strbetween( txt, "<strong><i>", " <a ;" ) )
+		answer = fixHTMLCharsAdvanced( strbetween( txt, "alert('", "')\"" ) )
+		if riddle != "" and answer != "":
+			__main__.sendMessage( riddle, recvfrom )
 			# Use a timer so we don't block
-			threading.Timer( 15.0, __main__.sendMessage, args=( "Answer: " + answer, channel ) ).start()
+			threading.Timer( 15.0, __main__.sendMessage, args=( "Answer: " + answer, recvfrom ) ).start()
 		return True
 	except:
 		return False

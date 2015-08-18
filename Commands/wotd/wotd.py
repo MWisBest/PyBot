@@ -16,13 +16,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import strbetween
 
 info = { "names" : [ "wotd", "wordoftheday" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://dictionary.reference.com/wordoftheday/" )
-		__main__.sendMessage( "Word of the Day: " + __main__.strbetween( res.text, "<title>Get the Word of the Day - ", " |" ), channel )
+		thewotd = strbetween( requests.get( "http://dictionary.reference.com/wordoftheday/" ).text, "<title>Get the Word of the Day - ", " |" )
+		if thewotd == "":
+			thewotd = "fail"
+		__main__.sendMessage( "Word of the Day: " + thewotd, recvfrom )
 		return True
 	except:
 		return False

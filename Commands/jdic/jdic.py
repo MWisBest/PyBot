@@ -17,21 +17,21 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "jdic", "japanese" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
 		message = message.strip()
 		if message != "":
-			res = requests.get( "http://tangorin.com/general/" + message )
-			definition = __main__.fixHTMLChars( __main__.strbetween( res.text, "<span class=\"kana\"><ruby><rb>", "</rb>" ) )
+			definition = fixHTMLChars( strbetween( requests.get( "http://tangorin.com/general/" + message ).text, "<span class=\"kana\"><ruby><rb>", "</rb>" ) )
 			if definition != "":
-				__main__.sendMessage( message + ": " + definition, channel )
+				__main__.sendMessage( message + ": " + definition, recvfrom )
 			else:
-				__main__.sendMessage( message + " was not found.", channel )
+				__main__.sendMessage( message + " was not found.", recvfrom )
 		else:
-			__main__.sendMessage( "Usage: jdic [words]", channel )
+			__main__.sendMessage( "Usage: jdic [words]", recvfrom )
 		return True
 	except:
 		return False

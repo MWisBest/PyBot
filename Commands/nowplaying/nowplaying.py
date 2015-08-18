@@ -16,16 +16,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
+from pybotutils import fixHTMLChars, strbetween
 
 info = { "names" : [ "nowplaying", "np", "lastfm" ], "access" : 0, "version" : 1 }
 
-def command( message, user, channel ):
+def command( message, user, recvfrom ):
 	try:
-		res = requests.get( "http://ws.audioscrobbler.com/2.0/user/" + message + "/recenttracks.xml?limit=1" )
-		txt = __main__.fixHTMLChars( res.text )
-		artist = __main__.strbetween( txt, "<artist>", "</artist>" )
-		song = __main__.strbetween( txt, "<name>", "</name>" )
-		album = __main__.strbetween( txt, "<album>", "</album>" )
+		txt = fixHTMLChars( requests.get( "http://ws.audioscrobbler.com/2.0/user/" + message + "/recenttracks.xml?limit=1" ).text )
+		artist = strbetween( txt, "<artist>", "</artist>" )
+		song = strbetween( txt, "<name>", "</name>" )
+		album = strbetween( txt, "<album>", "</album>" )
 		
 		if album != "":
 			albumtext = " from the album " + album
@@ -37,9 +37,9 @@ def command( message, user, channel ):
 		else:
 			nowplaying = " last listened "
 		if song != "":
-			__main__.sendMessage( message + nowplaying + "to " + song + " by " + artist + albumtext, channel )
+			__main__.sendMessage( message + nowplaying + "to " + song + " by " + artist + albumtext, recvfrom )
 		else:
-			__main__.sendMessage( message + " was not found.", channel )
+			__main__.sendMessage( message + " was not found.", recvfrom )
 		return True
 	except:
 		return False
