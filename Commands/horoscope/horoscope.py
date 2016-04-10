@@ -27,13 +27,10 @@ def command( message, user, recvfrom ):
 	try:
 		message = message.strip().lower()
 		if message in signs:
-			txt = requests.get( "http://my.horoscope.com/astrology/free-daily-horoscope-" + message + ".html" ).text
-			horoscope = fixHTMLCharsAdvanced( strbetween( txt, "<div class=\"fontdef1\" style=\"padding-right:10px;\" id=\"textline\">", "</div>" ) )
-			luckynum = fixHTMLCharsAdvanced( strbetween( txt, "<div class=\"fontultrasma5\"><b>", "</b>" ) )
-			luckynum = luckynum.replace( "\t", "" )
+			txt = requests.get( "http://www.astrology.com/horoscope/daily/" + message + ".html" ).text
+			horoscope = fixHTMLCharsAdvanced( strbetween( txt, "<div class=\"page-horoscope-text\">", "</div>" ) )
 			if horoscope != "":
-				__main__.sendMessage( message + ": " + horoscope, recvfrom )
-				__main__.sendMessage( "[Lucky Numbers]:" + luckynum, recvfrom )
+				__main__.sendMessage( horoscope, recvfrom )
 			else:
 				__main__.sendMessage( message + "'s sign not found today. :(", recvfrom )
 		elif message == "":
