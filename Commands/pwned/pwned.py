@@ -1,7 +1,6 @@
 ###########################################################################
 ## PyBot                                                                 ##
 ## Copyright (C) 2015, Kyle Repinski                                     ##
-## Copyright (C) 2015, Andres Preciado (Glitch)                          ##
 ##                                                                       ##
 ## This program is free software: you can redistribute it and/or modify  ##
 ## it under the terms of the GNU General Public License as published by  ##
@@ -17,21 +16,17 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
 import __main__, requests
-from pybotutils import fixHTMLChars, strbetween
+from pybotutils import fixHTMLChars
 
 info = { "names" : [ "haveibeenpwned", "pwned", "hacked" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
 	try:
 		txt = requests.get( "https://haveibeenpwned.com/api/breachedaccount/" + message ).text
-		#		txt.replace('[",'"]')
-		#txt.replace('","',", ")
-		#if txt != "":
-				#__main__.sendMessage( message + " has been pwned on: " + txt, recvfrom )
-		accounts = fixHTMLChars( strbetween( txt, "[\"" , "\"]" ) )
-		accounts.replace('","',", ")
-		if synonym != "":
-				__main__.sendMessage( message + " has been pwned on: " + accounts, recvfrom )
+		txt.replace( "[", "" ).replace( "]", "" ).replace( "\"", "" ).replace( ",", ", " )
+		txt.replace('","',", ")
+		if txt != "":
+				__main__.sendMessage( message + " has been pwned on: " + txt, recvfrom )
 		else:
 			__main__.sendMessage( message + " seems to be safe!", recvfrom )
 		return True
