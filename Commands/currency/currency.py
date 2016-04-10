@@ -27,10 +27,13 @@ def command( message, user, recvfrom ):
 		if len( message ) != 3 or not message[0].isdigit():
 			__main__.sendMessage( "Usage: currency [amount] [from] [to]", recvfrom )
 		else:
-			txt = requests.get( "http://www.mobilecurrencyconverter.com/index.php?cur_n=" + message[0] + "&cur_f=" + message[1] + "&cur_t=" +  message[2] + "&cur_s=major&a=Y" ).text
-			conv = fixHTMLCharsAdvanced( strbetween( txt, "<font class=\"cr_cv\">", "</font><br/>" ) )
-			if conv != "" and " = 0 " not in conv:
-				__main__.sendMessage( conv, recvfrom )
+			txt = requests.get( "http://www.fxexchangerate.com/m/converter-" + message[0] + "-" + message[1] + "-to-" +  message[2] + ".html" ).text
+			from1 = fixHTMLCharsAdvanced( strbetween( txt, "<title>Converter ", " To" ) )
+			to1= fixHTMLCharsAdvanced( strbetween( txt, "Bid Price: ", "</div>" ) )
+			toname= fixHTMLCharsAdvanced( strbetween( txt, "To ", " - FX Exchange Rate</title>" ) )
+			updated= fixHTMLCharsAdvanced( strbetween( txt, "Updated:: ",  "</div>" ) )
+			if from1 != "" and " = 0 " not in from1:
+				__main__.sendMessage( from1 + " = " + to1 + " " + toname + " :: Last Updated: " + updated , recvfrom )
 				return True
 			else:
 				__main__.sendMessage( "Conversion unsuccessful! Make sure to use proper currency codes.", recvfrom )
