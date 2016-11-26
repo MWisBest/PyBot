@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 ###########################################################################
 ## PyBot                                                                 ##
 ## Copyright (C) 2015, Kyle Repinski                                     ##
@@ -30,7 +31,7 @@ elif int( pyversion[0] ) == 3 and int( pyversion[1] ) < 4:
 #####################
 ## MODULAR IMPORTS ##
 # This is a pretty clever way to make the bot modular/extensible. :)
-def importFolder( foldername, dictaddedto="" ):
+def importFolder( foldername, dictaddedto="", headervar=".info" ):
 	folderpath = os.path.dirname( os.path.realpath( __file__ ) ) + os.sep + foldername + os.sep
 	sys.path.insert( 1, folderpath )
 	for modulefolder in os.listdir( folderpath ):
@@ -38,9 +39,10 @@ def importFolder( foldername, dictaddedto="" ):
 			try:
 				exec( "global " + modulefolder + "\nimport " + modulefolder ) # as much as I hate exec, i cant find another way to do this!
 				if dictaddedto != "":
-					exec( "global " + dictaddedto + "dict\n" + dictaddedto + "dict[modulefolder] = " + modulefolder + ".info" )
-			except:
+					exec( "global " + dictaddedto + "dict\n" + dictaddedto + "dict[modulefolder] = " + modulefolder + headervar )
+			except ImportError as err:
 				print( "Failed to import: " + modulefolder )
+				print( err )
 
 # Current required modules are:
 # - colorama
@@ -54,6 +56,11 @@ importFolder( "Modules" )
 # Current required utilities are:
 # - pybotutils
 importFolder( "Utilities" )
+
+# APIs refer to different chat systems that can be connected to in a simple, modular manner.
+apidict = {}
+API = {}
+importFolder( "APIs", dictaddedto="api", headervar="" )
 
 # Commands are run on request, e.x. "!fml"
 commanddict = {}
@@ -95,7 +102,7 @@ loggedIn = False
 chanJoined = False
 chanJoinDelay = 0
 away = False
-slowConnect = True
+slowConnect = False
 pyBotVersion = "Beta"
 CAPs = { "server" : [], "client" : ( "sasl" ), "enabled" : [], "actuallyUseThisCrap" : True }
 ## GLOBALS ##
@@ -125,10 +132,11 @@ class PyBotUnpickler( pickle.Unpickler ):
 ##################################################
 ## FUNCTIONS TO SAVE AND LOAD THE DATABASE FILE ##
 def loadDatabase():
-	global database, databaseName
+	global database, databaseName, API
 	with open( databaseName, "rb" ) as pybotfile:
 		with io.BytesIO( pybotfile.read() ) as pybotfilebytes:
 			database = ( PyBotUnpickler( pybotfilebytes ) ).load()
+	API = apidict[database['api']['system']]
 
 def saveDatabase():
 	global database, databaseName
@@ -150,7 +158,7 @@ try:
 		del database['botInfo']['channel']
 		database['version'] = 2
 		saveDatabase()
-	if database['version'] == 2:
+	if database['version'] == 2: # Upgrade to version 3
 		# Version 3 changes:
 		# - ['botInfo']['password'] is now stored in base85 format rather than plaintext.
 		#     This doesn't provide any real security, but it prevents some noob from
@@ -158,14 +166,35 @@ try:
 		database['botInfo']['password'] = base64.b85encode( database['botInfo']['password'].encode( "utf-8" ), pad=True )
 		database['version'] = 3
 		saveDatabase()
+	if database['version'] == 3: # Upgrade to version 4
+		# Version 4 changes:
+		# - Modular API system
+		database['api'] = {}
+		database['api']['system'] = "irc" # default to IRC
+		database['api']['ircsettings'] = {}
+		database['api']['ircsettings']['channels'] = database['botInfo']['chanels']
+		database['api']['ircsettings']['nick']     = database['botInfo']['nick']
+		database['api']['ircsettings']['password'] = database['botInfo']['password']
+		database['api']['ircsettings']['network']  = database['botInfo']['network']
+		database['api']['ircsettings']['port']     = database['botInfo']['port']
+		del database['botInfo']['channels']
+		del database['botInfo']['nick']
+		del database['botInfo']['password']
+		del database['botInfo']['network']
+		del database['botInfo']['port']
 except IOError: # Create pybot.pickle on first start
-	database = { "accessList" : {}, "botInfo" : { "nick" : "", "password" : base64.b85encode( "".encode( "utf-8" ), pad=True ), "network" : "", "port" : 0, "channels" : [] }, "globals" : { "cc" : "!", "reverse" : False, "debug" : False }, "version" : 3 }
+	#, "network" : "", "port" : 0, "channels" : []
+	database = { "api"        : { "system" : "irc", "ircsettings" : { "channels" : [], "nick" : "", "password" : base64.b85encode( "".encode( "utf-8" ), pad=True ), "network" : "", "port" : -1 } },
+				 "accessList" : {},
+				 "globals"    : { "cc" : "!", "reverse" : False, "debug" : False },
+				 "version"    : 4 }
 	print( colorama.Fore.CYAN )
-	database['botInfo']['network'] = input( "Please enter the address of the IRC network you want to connect to.\n" )
-	database['botInfo']['port'] = int( input( "Please enter the port while you're at it!\n" ) )
-	database['botInfo']['nick'] = input( "Please enter a valid (NO STUPID SYMBOLS) IRC nick for your bot.\n" ).replace( " ", "_" ).replace( ".", "_" ).replace( ",", "_" )
-	database['botInfo']['password'] = base64.b85encode( ( input( "Please enter your bot's NickServ password if required, otherwise leave this blank.\n" ) ).encode( "utf-8" ), pad=True )
-	database['botInfo']['channels'] = [ input( "Please enter the initial channel that your bot will be joining.\n" ) ]
+	temp = ""
+	while temp not in apidict.keys():
+		temp = input( "Please select an API from the following: " + str( list( apidict.keys() ) ) + "\n" )
+	database['api']['system'] = temp
+	API = apidict[temp]
+	API.inputSettings()
 	devel = input( "Please enter your Nick so the bot will listen to you.\n" )
 	database['accessList'][devel] = 4
 	print( colorama.Fore.WHITE )
@@ -177,145 +206,12 @@ except IOError: # Create pybot.pickle on first start
 ###########################
 ## FORMAT CONSOLE OUTPUT ##
 def sendprint( packet ):
-	try:
-		if packet['command'] == "PONG":
-			return # Ingore PONGs
-		if database['globals']['debug']:
-			senddebugprint( packet['raw'], packet['timestamp'] )
-		else:
-			toprint = ""
-			# Don't overwrite a part of packet
-			# TODO: Just replace newlines etc; spaces are valid at the ends!
-			packetrest = packet['rest'].rstrip()
-			user = database['botInfo']['nick']
-			if packet['command'] == "PRIVMSG":
-				locMessage = packetrest.partition( " :" )
-				if locMessage[0] in database['botInfo']['channels']: #channel message
-					if not locMessage[2].startswith( "\x01ACTION" ):
-						toprint = "[" + locMessage[0] + "] " + user + ": " + locMessage[2]
-					else:
-						toprint = "[" + locMessage[0] + "] *" + user + locMessage[2][7:-1]
-				else: #PM
-					if locMessage[2][0] != "\x01":
-						toprint = ">" + locMessage[0] + "<: " + locMessage[2]
-					else: #CTCP or ME
-						if locMessage[2].startswith( "\x01ACTION" ): #ME
-							toprint = ">" + locMessage[0] + "< *" + user + locMessage[2][7:-1]
-						else:
-							pass #TODO
-							#toprint = "Received a CTCP " + locMessage[2][1:-1] + " from " + user
-			elif packet['command'] == "PART":
-				locMessage = packetrest.partition( " :" )
-				toprint = "[" + locMessage[0] + "] " + user + " has left (Part: " + locMessage[2] + ")"
-			elif packet['command'] == "JOIN":
-				if packetrest[0] != "#": # HACK: Some networks send an extra character here, and some don't...
-					packetrest = packetrest[1:]
-				toprint = "[" + packetrest + "] " + user + " has joined"
-			elif packet['command'] == "QUIT":
-				toprint = user + " has quit (Quit: " + packetrest[1:] + ")"
-			elif packet['command'] == "NICK":
-				toprint = user + " is now known as " + packetrest
-			elif packet['command'] == "TOPIC":
-				locTopic = packetrest.partition( " :" )
-				toprint = "[" + locTopic[0] + "] " + user + " has changed the topic to: " + locTopic[2]
-			if toprint != "":
-				sendregularprint( toprint, packet['timestamp'] )
-	except: # Really. REALLY.
-		warnprint( "Last sendprint had an exception. Caught, but yeah. Something's wrong on your end." )
+	global API
+	API.sendprint( packet )
 
 def recvprint( packet ):
-	try:
-		if packet['command'] == "PING":
-			return # Ingore PINGs
-		if database['globals']['debug']:
-			recvdebugprint( packet['raw'].rstrip(), packet['timestamp'] )
-		else:
-			toprint = ""
-			# Don't overwrite a part of packet
-			# TODO: Just replace newlines etc; spaces are valid at the ends!
-			packetrest = packet['rest'].rstrip()
-			# We use the user in just about everything here, just get it ahead of time and save some lines of code.
-			user = packet['host'].partition( "!" )[0][1:]
-			if packet['command'] == "PRIVMSG": # ledeledele
-				locMessage = packetrest.partition( " :" )
-				if locMessage[0] in database['botInfo']['channels']: #channel message
-					if not locMessage[2].startswith( "\x01ACTION" ):
-						toprint = "[" + locMessage[0] + "] " + user + ": " + locMessage[2]
-					else:
-						toprint = "[" + locMessage[0] + "] *" + user + locMessage[2][7:-1]
-				else: #PM
-					if locMessage[2][0] != "\x01":
-						toprint = "*" + user + "*: " + locMessage[2]
-					else: #CTCP or ME
-						if locMessage[2].startswith( "\x01ACTION" ): #ME
-							toprint = "*" + user + "* *" + locMessage[2][7:-1]
-						else:
-							toprint = "Received a CTCP " + locMessage[2][1:-1] + " from " + user
-			elif packet['command'] == "PART": # Format PARTs nicely
-				locMessage = packetrest.partition( " :" )
-				if user != database['botInfo']['nick']: # We get our own PARTs, but let sendprint do them.
-					toprint = "[" + locMessage[0] + "] " + user + " has left (" + locMessage[2] + ")"
-			elif packet['command'] == "JOIN": # Format JOINs nicely too
-				if user != database['botInfo']['nick']: # We get our own JOINs, but let sendprint do them.
-					if packetrest[0] != "#": # HACK: Some networks send an extra character here, and some don't...
-						packetrest = packetrest[1:]
-					userhost = packet['host'].partition( "!" )[2]
-					toprint = "[" + packetrest + "] " + user + " (" + userhost + ") has joined"
-			elif packet['command'] == "QUIT":
-				toprint = user + " has quit (" + packetrest[1:] + ")"
-			elif packet['command'] == "NICK":
-				if packetrest != database['botInfo']['nick']: # We also get our own NICKs, however it's the packetrest part (newnick) here
-					toprint = user + " is now known as " + packetrest
-			elif packet['command'] == "KICK":
-				locMessage = list( packetrest.partition( " :" ) )
-				locMessage[1] = locMessage[0].partition( " " )
-				toprint = user + " has kicked " + locMessage[1][2] + " from " + locMessage[1][0] + "(" + locMessage[2] + ")"
-			elif packet['command'] == "TOPIC":
-				if user != database['botInfo']['nick']: # Jeez, we even get our own TOPICs!
-					locTopic = packetrest.partition( " :" )
-					toprint = "[" + locTopic[0] + "] " + user + " has changed the topic to: " + locTopic[2]
-			elif packet['command'] == "MODE":
-				modemap = {
-					"v" : { "name" : "voice", "priority" : 1 },
-					"h" : { "name" : "half-operator", "priority" : 2 },
-					"o" : { "name" : "operator", "priority" : 3 },
-					"a" : { "name" : "protected", "priority" : 4 },
-					"q" : { "name" : "founder", "priority" : 5 } }
-				chanRest = packetrest.partition( " " )
-				if chanRest[2][0] == "+":
-					givetext = " gives "
-					tofromtext = " to "
-				else:
-					givetext = " removes "
-					tofromtext = " from "
-				modeassigned = pybotutils.strbetween( chanRest[2], chanRest[2][0], " " )
-				if len( modeassigned ) == 1: # Only one mode assigned, easy-peasy
-					# We could have less code here if we just axe this ==1 part and
-					# use the bottom looping version (which would still work fine here),
-					# however one assignment is by far the most common codepath, so this
-					# is faster most of the time.
-					if modeassigned in modemap:
-						usergivento = chanRest[2].rpartition( " " )[2]
-						toprint = "[" + chanRest[0] + "] " + user + givetext + modemap[modeassigned]['name'] + " status" + tofromtext + usergivento
-				else:
-					if len( modeassigned ) <= len( modemap ): # Make sure we don't have more modes than we understand
-						modesassigned = []
-						i = len( modeassigned )
-						while i > 0:
-							i = i - 1
-							modesassigned.append( modeassigned[i] )
-						modesassigned.reverse() # I'm too lazy to reverse the loop above. lel.
-						usergivento = chanRest[2].rpartition( " " )[2]
-						for mode in modesassigned:
-							if mode in modemap:
-								toprint = "[" + chanRest[0] + "] " + user + givetext + modemap[mode]['name'] + " status" + tofromtext + usergivento
-								recvregularprint( toprint, packet['timestamp'] )
-						toprint = ""
-			if toprint != "":
-				recvregularprint( toprint, packet['timestamp'] )
-	except: # Really. REALLY.
-		#print( "Unexpected error: ", sys.exc_info()[0] )
-		warnprint( "Last recvprint had an exception. Caught, but yeah. Something's wrong on your end." )
+	global API
+	API.recvprint( packet )
 ## FORMAT CONSOLE OUTPUT ##
 ###########################
 
@@ -324,65 +220,16 @@ def recvprint( packet ):
 ## UTILS ##
 # TODO: Move some of these to pybotutils
 def makePacket( data, inbound=False ):
-	packet = { "host" : "", "command" : "", "rest" : "", "raw" : data, "timestamp" : 0 }
-	
-	### SEC-NOTICE: We only send a packet at a time; there should NOT be any newlines in it! ###
-	# This is somewhat defensive: sendPacket takes care of this on its own too. #
-	data = data.replace( "\r", "" ).replace( "\n", "" )
-	
-	if inbound:
-		datalist = data.split( ' ', maxsplit=2 )
-		packet['timestamp'] = time.time()
-	else:
-		datalist = data.split( ' ', maxsplit=1 )
-	# In the event we go to the elif, avoid running len a second time.
-	listlength = len( datalist )
-	if listlength == 3:
-		# Generally the case for most received packets.
-		packet['host'] = datalist[0]
-		packet['command'] = datalist[1]
-		packet['rest'] = datalist[2]
-	elif listlength == 2:
-		# Most outbound packets, as well as PING inbound packets.
-		packet['command'] = datalist[0]
-		packet['rest'] = datalist[1]
-	# only other possibility is listlength is 1.
-	# in that case we leave everything blank and let stuff parse the raw packet only.
-	#if database['globals']['debug']:
-		#print( str( packet ) )
-	return packet
+	global API
+	return API.makePacket( data, inbound )
 
 def sendPacket( packet, forceDebugPrint=False ):
-	global sock
-	sent = True
-	# TODO: Fix this crap
-	
-	### SEC-NOTICE: We only send a packet at a time; there should NOT be any newlines in it! ###
-	# This is somewhat defensive: makePacket should've taken care of this for us already. #
-	packet['raw'] = packet['raw'].replace( "\r", "" ).replace( "\n", "" )
-	
-	bytespacket = ( packet['raw'] + "\r\n" ).encode( errors="ignore" )
-	
-	length = len( bytespacket )
-	amountSent = 0
-	while length != amountSent:
-		try:
-			amountSent += sock.send( bytespacket )
-		except:
-			sent = False
-	# Set the packet's timestamp to the time when we actually finished sending it.
-	packet['timestamp'] = time.time()
-	if forceDebugPrint:
-		if database['globals']['debug']: # Check this in here rather than with an and up above, this way we don't print debug stuff when debug is off
-			senddebugprint( packet['raw'], packet['timestamp'] )
-	else:
-		sendprint( packet )
-	if not sent:
-		warnprint( "Last packet did not send successfully. If this persists, check your connection and/or restart the bot." )
+	global API, sock
+	API.sendPacket( packet, sock, forceDebugPrint )
 
 def reboot():
-	global sock, pyBotVersion
-	sendPacket( makePacket( "QUIT :PyBot " + pyBotVersion + ". (Rebooting)" ) )
+	global API, sock, pyBotVersion
+	API.onReboot()
 	sock.shutdown( socket.SHUT_RDWR )
 	sock.close()
 	os.execl( sys.executable, sys.executable, * sys.argv )
@@ -393,8 +240,8 @@ def reconnect():
 	init()
 
 def die():
-	global sock, pyBotVersion
-	sendPacket( makePacket( "QUIT :PyBot " + pyBotVersion + ". (Shutting Down)" ) )
+	global API, sock, pyBotVersion
+	API.onDie()
 	sock.shutdown( socket.SHUT_RDWR )
 	sock.close()
 	exit()
@@ -405,18 +252,12 @@ def die():
 #########################
 ## MAIN PACKET HANDLER ##
 def handlePackets( packet ):
-	global database
+	global database, API
 	runThroughHandlers = True # If WE handle a packet here, the handlers shouldn't.
-	if packet['command'] == "PRIVMSG":
-		privmsginfo = packet['rest'].split( " :", maxsplit=1 )
-		user = pybotutils.strbetween( packet['host'], ":", "!" )
-		if ((packet['rest'])[0] == "#"): # channel message
-			locfrom = privmsginfo[0]
-		else:
-			locfrom = user
-		# Some commands (such as hash) NEED to parse extra spaces at the end of the message.
-		# TODO: Find a more elegant way that works for everybody.
-		message = privmsginfo[1].lstrip()
+	if API.isMessage( packet ):
+		user = API.getMessageUser( packet )
+		locfrom = API.getMessageLoc( packet )
+		message = API.getMessageText( packet )
 		myAccess = getAccessLevel( user )
 		if len( message ) > 1 and message[0] == database['globals']['cc'] and myAccess >= 0:
 			message = message[1:]
@@ -517,21 +358,19 @@ def externalHandlers( packet ):
 #################
 ## SEND STUFFS ##
 def sendMessage( message, whereto ):
-	global database
+	global database, API
 	if database['globals']['reverse']:
 		message = message[::-1]
-	sendPacket( makePacket( "PRIVMSG " + whereto + " :" + message ) )
+	API.sendMessage( message, whereto )
 
 def sendPong( pingpacket ): # PING reply
-	pingpacket['command'] = "PONG"
-	pingpacket['raw'] = pingpacket['raw'].replace( "PING", "PONG" ).replace( "\r", "" ).replace( "\n", "" )
-	sendPacket( pingpacket )
+	API.sendPong( pingpacket )
 
 def sendMe( message, whereto ):
 	global database
 	if database['globals']['reverse']:
 		message = message[::-1]
-	sendPacket( makePacket( "PRIVMSG " + whereto + " :\x01ACTION " + message + "\x01" ) )
+	API.sendMe( message, whereto )
 ## SEND STUFFS ##
 #################
 
@@ -666,7 +505,10 @@ def toggleReverse( args, recvfrom ):
 	return False
 
 def toggleAway( message, recvfrom ):
-	global away
+	global away, database
+	# TODO: API
+	if database['api']['system'] != "irc":
+		return
 	if not away:
 		sendMessage( "Going Away. Reason: " + message, recvfrom )
 		sendPacket( makePacket( "AWAY " + message ), forceDebugPrint=True )
@@ -844,6 +686,9 @@ def unbanUser( user, recvfrom ):
 ## BOT INFOEDITING BEGIN ##
 def editBotInfo( args, recvfrom ):
 	global database
+	# TODO: API
+	if database['api']['system'] != "irc":
+		return False
 	if args != "":
 		# TODO: Stop making lists of tuples just to modify a value in it.
 		args = list( args.partition( " " ) )
@@ -852,13 +697,13 @@ def editBotInfo( args, recvfrom ):
 		if args[0] == "nick":
 			args[2] = args[2].replace( " ", "_" )
 			sendPacket( makePacket( "NICK " + args[2] ) )
-			database['botInfo']['nick'] = args[2]
+			database['api']['ircsettings']['nick'] = args[2]
 			saveDatabase()
 			return True
 		elif args[0] == "reset":
 			args[2] = "PyBot"
 			sendPacket( makePacket( "NICK " + args[2] ) )
-			database['botInfo']['nick'] = args[2]
+			database['api']['ircsettings']['nick'] = args[2]
 			saveDatabase()
 			return True
 	sendMessage( "Usage: bot [nick/reset] <value>", recvfrom )
@@ -866,22 +711,25 @@ def editBotInfo( args, recvfrom ):
 
 def changeChannel( chan, recvfrom ):
 	global database
+	# TODO: API
+	if database['api']['system'] != "irc":
+		return False
 	if chan != "":
 		# TODO: Stop making lists of tuples just to modify a value in it.
 		chan = list( chan.partition( " " ) )
 		chan[0] = chan[0].lower()
 		if chan[0] == "add":
-			database['botInfo']['channels'].append( chan[2] )
+			database['api']['ircsettings']['channels'].append( chan[2] )
 			sendPacket( makePacket( "JOIN " + chan[2] ) )
 			saveDatabase()
 			return True
 		elif chan[0] == "remove":
-			database['botInfo']['channels'].remove( chan[2] )
+			database['api']['ircsettings']['channels'].remove( chan[2] )
 			sendPacket( makePacket( "PART " + chan[2] + " :Channel removed!" ) )
 			saveDatabase()
 			return True
 		elif chan[0] == "list":
-			sendMessage( ", ".join( sorted( database['botInfo']['channels'], key=str.lower ) ), recvfrom )
+			sendMessage( ", ".join( sorted( database['api']['ircsettings']['channels'], key=str.lower ) ), recvfrom )
 			return True
 	sendMessage( "Usage: channels [add/remove/list] <channel>", recvfrom )
 	return False
@@ -897,8 +745,8 @@ def login():
 		time.sleep( 2 )
 	if CAPs['actuallyUseThisCrap']:
 		sendPacket( makePacket( "CAP LS" ), forceDebugPrint=True )
-	sendPacket( makePacket( "NICK " + database['botInfo']['nick'] ), forceDebugPrint=True )
-	sendPacket( makePacket( "USER " + database['botInfo']['nick'] + " " + database['botInfo']['nick'] + " " + database['botInfo']['network'] + " :" + database['botInfo']['nick'] ), forceDebugPrint=True )
+	sendPacket( makePacket( "NICK " + database['api']['ircsettings']['nick'] ), forceDebugPrint=True )
+	sendPacket( makePacket( "USER " + database['api']['ircsettings']['nick'] + " " + database['api']['ircsettings']['nick'] + " " + database['api']['ircsettings']['network'] + " :" + database['api']['ircsettings']['nick'] ), forceDebugPrint=True )
 	loggedIn = True
 
 def handleCAPs( packet ):
@@ -918,8 +766,8 @@ def handleCAPs( packet ):
 		if "sasl" in CAPs['enabled']:
 			sendPacket( makePacket( "AUTHENTICATE PLAIN" ) )
 			data = sock.recv( 512 ).decode( errors="ignore" )
-			password = ( base64.b85decode( database['botInfo']['password'] ) ).decode( "utf-8" )
-			sendPacket( makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (database['botInfo']['nick'], database['botInfo']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
+			password = ( base64.b85decode( database['api']['ircsettings']['password'] ) ).decode( "utf-8" )
+			sendPacket( makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (database['api']['ircsettings']['nick'], database['api']['ircsettings']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
 			data = sock.recv( 2048 ).decode( errors="ignore" )
 			sendPacket( makePacket( "CAP END" ) )
 			return True
@@ -934,11 +782,11 @@ def chanJoin():
 		# Auth should (try) to be done before join.
 		# It's not realistic to expect that to happen with NickServ/PM-based auth however,
 		# but let's give it a little head start at least.
-		password = ( base64.b85decode( database['botInfo']['password'] ) ).decode( "utf-8" )
+		password = ( base64.b85decode( database['api']['ircsettings']['password'] ) ).decode( "utf-8" )
 		if password != "" and "sasl" not in CAPs['enabled']:
 			sendPacket( makePacket( "PRIVMSG NickServ :IDENTIFY " + password ), forceDebugPrint=True )
 		
-		sendPacket( makePacket( "JOIN " + ",".join( database['botInfo']['channels'] ) ), forceDebugPrint=True )
+		sendPacket( makePacket( "JOIN " + ",".join( database['api']['ircsettings']['channels'] ) ), forceDebugPrint=True )
 		chanJoined = True
 
 def init():
@@ -950,13 +798,13 @@ def init():
 		loggedIn = False
 		chanJoinDelay = -1
 	
-	termcolor.cprint( "Connecting to: " + database['botInfo']['network'] + ":" + str( database['botInfo']['port'] ), "magenta" )
+	termcolor.cprint( "Connecting to: " + database['api']['ircsettings']['network'] + ":" + str( database['api']['ircsettings']['port'] ), "magenta" )
 	
 	connected = False
 	while not connected:
 		try:
 			sock = socket.socket()
-			sock.connect( ( database['botInfo']['network'], database['botInfo']['port'] ) )
+			sock.connect( ( database['api']['ircsettings']['network'], database['api']['ircsettings']['port'] ) )
 			connected = True
 		except TimeoutError:
 			print( "Timeout error! Retrying..." )
