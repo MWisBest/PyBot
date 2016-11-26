@@ -28,6 +28,28 @@ elif int( pyversion[0] ) == 3 and int( pyversion[1] ) < 4:
 	exit()
 
 
+#############
+## GLOBALS ##
+# TODO: Stop using the global scope so much...
+database = {}
+# Allow custom database filename.
+# This allows one PyBot install to run on multiple servers (needs separate db for each).
+if len( sys.argv ) >= 2 and sys.argv[1].startswith( "pybot" ) and sys.argv[1].endswith( "pickle" ):
+	databaseName = sys.argv[1]
+else:
+	databaseName = "pybot.pickle"
+rebooted = 0
+loggedIn = False
+chanJoined = False
+chanJoinDelay = 0
+away = False
+slowConnect = False
+pyBotVersion = "Beta"
+sock = socket.socket()
+## GLOBALS ##
+#############
+
+
 #####################
 ## MODULAR IMPORTS ##
 # This is a pretty clever way to make the bot modular/extensible. :)
@@ -87,28 +109,6 @@ warnprint = lambda x: termcolor.cprint( x.replace( "\r", "" ).replace( "\n", "" 
 ##########################
 
 
-#############
-## GLOBALS ##
-# TODO: Stop using the global scope so much...
-database = {}
-# Allow custom database filename.
-# This allows one PyBot install to run on multiple servers (needs separate db for each).
-if len( sys.argv ) >= 2 and sys.argv[1].startswith( "pybot" ) and sys.argv[1].endswith( "pickle" ):
-	databaseName = sys.argv[1]
-else:
-	databaseName = "pybot.pickle"
-rebooted = 0
-loggedIn = False
-chanJoined = False
-chanJoinDelay = 0
-away = False
-slowConnect = False
-pyBotVersion = "Beta"
-CAPs = { "server" : [], "client" : ( "sasl" ), "enabled" : [], "actuallyUseThisCrap" : True }
-## GLOBALS ##
-#############
-
-
 ##############################################################
 ## CUSTOM PICKLE CLASS TO PREVENT UNPICKLING ARBITRARY CODE ##
 safe_builtins = {
@@ -132,7 +132,7 @@ class PyBotUnpickler( pickle.Unpickler ):
 ##################################################
 ## FUNCTIONS TO SAVE AND LOAD THE DATABASE FILE ##
 def loadDatabase():
-	global database, databaseName, API
+	global API, database, databaseName
 	with open( databaseName, "rb" ) as pybotfile:
 		with io.BytesIO( pybotfile.read() ) as pybotfilebytes:
 			database = ( PyBotUnpickler( pybotfilebytes ) ).load()
@@ -252,7 +252,7 @@ def die():
 #########################
 ## MAIN PACKET HANDLER ##
 def handlePackets( packet ):
-	global database, API
+	global API, database
 	runThroughHandlers = True # If WE handle a packet here, the handlers shouldn't.
 	if API.isMessage( packet ):
 		user = API.getMessageUser( packet )
@@ -358,16 +358,17 @@ def externalHandlers( packet ):
 #################
 ## SEND STUFFS ##
 def sendMessage( message, whereto ):
-	global database, API
+	global API, database
 	if database['globals']['reverse']:
 		message = message[::-1]
 	API.sendMessage( message, whereto )
 
 def sendPong( pingpacket ): # PING reply
+	global API
 	API.sendPong( pingpacket )
 
 def sendMe( message, whereto ):
-	global database
+	global API, database
 	if database['globals']['reverse']:
 		message = message[::-1]
 	API.sendMe( message, whereto )
@@ -740,57 +741,22 @@ def changeChannel( chan, recvfrom ):
 ##############
 ## CORE BOT ##
 def login():
-	global database, loggedIn, slowConnect, CAPs
+	global API, loggedIn, slowConnect
 	if slowConnect:
 		time.sleep( 2 )
-	if CAPs['actuallyUseThisCrap']:
-		sendPacket( makePacket( "CAP LS" ), forceDebugPrint=True )
-	sendPacket( makePacket( "NICK " + database['api']['ircsettings']['nick'] ), forceDebugPrint=True )
-	sendPacket( makePacket( "USER " + database['api']['ircsettings']['nick'] + " " + database['api']['ircsettings']['nick'] + " " + database['api']['ircsettings']['network'] + " :" + database['api']['ircsettings']['nick'] ), forceDebugPrint=True )
-	loggedIn = True
+	loggedIn = API.login()
 
-def handleCAPs( packet ):
-	global CAPs, database, sock
-	if database['globals']['debug']:
-		print( "Handling CAP: " + str( packet ) )
-	if " LS :" in packet['rest']:
-		CAPs['server'] = packet['rest'].partition( " LS :" )[2].split()
-		for cap in CAPs['server']:
-			if cap in CAPs['client']:
-				CAPs['enabled'].append( cap )
-		if CAPs['enabled']:
-			sendPacket( makePacket( "CAP REQ :" + " ".join( CAPs['enabled'] ) ) )
-			return True
-	elif " ACK :" in packet['rest']:
-		CAPs['enabled'] = packet['rest'].partition( " ACK :" )[2].split()
-		if "sasl" in CAPs['enabled']:
-			sendPacket( makePacket( "AUTHENTICATE PLAIN" ) )
-			data = sock.recv( 512 ).decode( errors="ignore" )
-			password = ( base64.b85decode( database['api']['ircsettings']['password'] ) ).decode( "utf-8" )
-			sendPacket( makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (database['api']['ircsettings']['nick'], database['api']['ircsettings']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
-			data = sock.recv( 2048 ).decode( errors="ignore" )
-			sendPacket( makePacket( "CAP END" ) )
-			return True
-	return False
 
 def chanJoin():
-	global database, chanJoined, chanJoinDelay, slowConnect, CAPs
+	global API, chanJoined, chanJoinDelay, slowConnect
 	if slowConnect:
 		time.sleep( 2 )
 	chanJoinDelay += 2
 	if chanJoinDelay >= 1: #whatever
-		# Auth should (try) to be done before join.
-		# It's not realistic to expect that to happen with NickServ/PM-based auth however,
-		# but let's give it a little head start at least.
-		password = ( base64.b85decode( database['api']['ircsettings']['password'] ) ).decode( "utf-8" )
-		if password != "" and "sasl" not in CAPs['enabled']:
-			sendPacket( makePacket( "PRIVMSG NickServ :IDENTIFY " + password ), forceDebugPrint=True )
-		
-		sendPacket( makePacket( "JOIN " + ",".join( database['api']['ircsettings']['channels'] ) ), forceDebugPrint=True )
-		chanJoined = True
+		chanJoined = API.join()
 
 def init():
-	global database, sock, loggedIn, chanJoined, chanJoinDelay, rebooted
+	global API, sock, loggedIn, chanJoined, chanJoinDelay, rebooted
 	if rebooted != 0:
 		sock.shutdown( socket.SHUT_RDWR )
 		sock.close()
@@ -798,19 +764,7 @@ def init():
 		loggedIn = False
 		chanJoinDelay = -1
 	
-	termcolor.cprint( "Connecting to: " + database['api']['ircsettings']['network'] + ":" + str( database['api']['ircsettings']['port'] ), "magenta" )
-	
-	connected = False
-	while not connected:
-		try:
-			sock = socket.socket()
-			sock.connect( ( database['api']['ircsettings']['network'], database['api']['ircsettings']['port'] ) )
-			connected = True
-		except TimeoutError:
-			print( "Timeout error! Retrying..." )
-	
-	termcolor.cprint( "Connected.", "magenta", attrs=['bold'] )
-	termcolor.cprint( "Logging in...", "magenta" )
+	API.connect()
 	login()
 
 
@@ -818,7 +772,7 @@ init()	# Bot initiates here
 
 
 def main():
-	global sock, database, loggedIn, chanJoined, chanJoinDelay, slowConnect, CAPs
+	global API, sock, database, loggedIn, chanJoined, chanJoinDelay, slowConnect
 	while True:
 		try:
 			data = sock.recv( 8192 ).decode( errors="ignore" )
@@ -831,8 +785,8 @@ def main():
 							recvprint( x )
 						if x['command'] == "PING": # Some servers send this in the connection process, take care of that here... bastards
 							sendPong( x )
-						elif x['command'] == "CAP" and CAPs['actuallyUseThisCrap']:
-							handleCAPs( x )
+						elif x['command'] == "CAP":
+							API.handleCAPs( x )
 						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
 							if slowConnect:
 								joinThread = threading.Thread( target=chanJoin() )
@@ -842,8 +796,8 @@ def main():
 				else:
 					data = makePacket( data, inbound=True )
 					recvprint( data )
-					if data['command'] == "CAP" and CAPs['actuallyUseThisCrap']:
-						handleCAPs( data )
+					if data['command'] == "CAP":
+						API.handleCAPs( data )
 					else:
 						threading.Thread( target=handlePackets( data ) ).start()
 						#handlePackets( data )
