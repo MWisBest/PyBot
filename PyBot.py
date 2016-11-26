@@ -41,7 +41,6 @@ else:
 rebooted = 0
 loggedIn = False
 chanJoined = False
-chanJoinDelay = 0
 away = False
 slowConnect = False
 pyBotVersion = "Beta"
@@ -747,23 +746,19 @@ def login():
 		time.sleep( 2 )
 	loggedIn = API.login()
 
-
 def chanJoin():
-	global API, chanJoined, chanJoinDelay, slowConnect
+	global API, chanJoined, slowConnect
 	if slowConnect:
 		time.sleep( 2 )
-	chanJoinDelay += 2
-	if chanJoinDelay >= 1: #whatever
-		chanJoined = API.join()
+	chanJoined = API.join()
 
 def init():
-	global API, sock, loggedIn, chanJoined, chanJoinDelay, rebooted
+	global API, sock, loggedIn, chanJoined, rebooted
 	if rebooted != 0:
 		sock.shutdown( socket.SHUT_RDWR )
 		sock.close()
 		chanJoined = False
 		loggedIn = False
-		chanJoinDelay = -1
 	
 	API.connect()
 	login()
@@ -778,7 +773,7 @@ init()	# Bot initiates here
 
 
 def main():
-	global API, sock, database, loggedIn, chanJoined, chanJoinDelay, slowConnect
+	global API, sock, database, loggedIn, chanJoined, slowConnect
 	while True:
 		try:
 			data = sock.recv( 8192 ).decode( errors="ignore" )
