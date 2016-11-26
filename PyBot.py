@@ -763,7 +763,7 @@ def init():
 	API.connect()
 	login()
 
-def handleCaps( packet ):
+def handleCAPs( packet ):
 	global API, database
 	if database['api']['system'] == "irc":
 		API.handleCAPs( packet )
