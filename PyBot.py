@@ -364,8 +364,9 @@ def sendMessage( message, whereto ):
 	API.sendMessage( message, whereto )
 
 def sendPong( pingpacket ): # PING reply
-	global API
-	API.sendPong( pingpacket )
+	global API, database
+	if database['api']['system'] == "irc":
+		API.sendPong( pingpacket )
 
 def sendMe( message, whereto ):
 	global API, database
@@ -767,6 +768,11 @@ def init():
 	API.connect()
 	login()
 
+def handleCaps( packet ):
+	global API, database
+	if database['api']['system'] == "irc":
+		API.handleCAPs( packet )
+
 
 init()	# Bot initiates here
 
@@ -786,7 +792,7 @@ def main():
 						if x['command'] == "PING": # Some servers send this in the connection process, take care of that here... bastards
 							sendPong( x )
 						elif x['command'] == "CAP":
-							API.handleCAPs( x )
+							handleCAPs( x )
 						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
 							if slowConnect:
 								joinThread = threading.Thread( target=chanJoin() )
@@ -797,7 +803,7 @@ def main():
 					data = makePacket( data, inbound=True )
 					recvprint( data )
 					if data['command'] == "CAP":
-						API.handleCAPs( data )
+						handleCAPs( data )
 					else:
 						threading.Thread( target=handlePackets( data ) ).start()
 						#handlePackets( data )
