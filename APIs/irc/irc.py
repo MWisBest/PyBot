@@ -21,6 +21,8 @@ info = { "pretty_name" : "IRC", "version" : 1 }
 
 CAPs = { "server" : [], "client" : ( "sasl" ), "enabled" : [], "actuallyUseThisCrap" : True }
 
+apiHandledPackets = [ "PING", "CAP" ]
+
 
 def connect():
 	termcolor.cprint( "Connecting to: " + __main__.database['api']['ircsettings']['network'] + ":" + str( __main__.database['api']['ircsettings']['port'] ), "magenta" )
@@ -42,7 +44,7 @@ def login():
 		__main__.sendPacket( __main__.makePacket( "CAP LS" ), forceDebugPrint=True )
 	__main__.sendPacket( __main__.makePacket( "NICK " + __main__.database['api']['ircsettings']['nick'] ), forceDebugPrint=True )
 	__main__.sendPacket( __main__.makePacket( "USER " + __main__.database['api']['ircsettings']['nick'] + " " + __main__.database['api']['ircsettings']['nick'] + " " + __main__.database['api']['ircsettings']['network'] + " :" + __main__.database['api']['ircsettings']['nick'] ), forceDebugPrint=True )
-	return True
+	return not CAPs['actuallyUseThisCrap']
 
 
 def join():
@@ -55,6 +57,17 @@ def join():
 	
 	__main__.sendPacket( __main__.makePacket( "JOIN " + ",".join( __main__.database['api']['ircsettings']['channels'] ) ), forceDebugPrint=True )
 	return True
+
+
+def handleAPIPacket( packet ):
+	if packet['command'] == "PING":
+		# Make a shallow copy of the packet to avoid overwriting something.
+		pingpacket = dict( packet )
+		pingpacket['command'] = "PONG"
+		pingpacket['raw'] = pingpacket['raw'].replace( "PING", "PONG" )
+		__main__.sendPacket( pingpacket )
+	elif packet['command'] == "CAP":
+		handleCAPs( packet )
 
 
 def handleCAPs( packet ):
@@ -79,5 +92,6 @@ def handleCAPs( packet ):
 			__main__.sendPacket( __main__.makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (__main__.database['api']['ircsettings']['nick'], __main__.database['api']['ircsettings']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
 			data = __main__.sock.recv( 2048 ).decode( errors="ignore" )
 			__main__.sendPacket( __main__.makePacket( "CAP END" ) )
+			__main__.loggedIn = True
 			return True
 	return False

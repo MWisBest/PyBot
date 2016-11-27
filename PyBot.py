@@ -267,7 +267,7 @@ def handlePackets( packet ):
 			elif args[0] == "me":
 				sendMe( args[2], locfrom )
 			elif args[0] == "sayto" and myAccess >= 1:
-				sendMessage( args[2].partition( " " )[2], args[2].partition( " " )[0], theuser=user, bypass=False )
+				sendMessage( args[2].partition( " " )[2], args[2].partition( " " )[0] )
 			elif args[0] == "meto" and myAccess >= 1:
 				sendMe( args[2].partition( " " )[2], args[2].partition( " " )[0] )
 			elif args[0] == "ping":
@@ -313,11 +313,6 @@ def handlePackets( packet ):
 			else:
 				 externalCommands( args[0], args[2], user, locfrom, myAccess )
 			runThroughHandlers = False
-	elif packet['command'] == "PING":
-		# Reply with PONG!
-		# Keep this at the bottom; response time for this is lowest priority
-		sendPong( packet )
-		runThroughHandlers = False
 	if runThroughHandlers: # Try all the external handlers then.
 		externalHandlers( packet )
 
@@ -361,11 +356,6 @@ def sendMessage( message, whereto ):
 	if database['globals']['reverse']:
 		message = message[::-1]
 	API.sendMessage( message, whereto )
-
-def sendPong( pingpacket ): # PING reply
-	global API, database
-	if database['api']['system'] == "irc":
-		API.sendPong( pingpacket )
 
 def sendMe( message, whereto ):
 	global API, database
@@ -763,17 +753,12 @@ def init():
 	API.connect()
 	login()
 
-def handleCAPs( packet ):
-	global API, database
-	if database['api']['system'] == "irc":
-		API.handleCAPs( packet )
-
 
 init()	# Bot initiates here
 
 
 def main():
-	global API, sock, database, loggedIn, chanJoined, slowConnect
+	global API, sock, database, loggedIn, chanJoined
 	while True:
 		try:
 			data = sock.recv( 8192 ).decode( errors="ignore" )
@@ -784,30 +769,20 @@ def main():
 						x = makePacket( x, inbound=True )
 						if database['globals']['debug']:
 							recvprint( x )
-						if x['command'] == "PING": # Some servers send this in the connection process, take care of that here... bastards
-							sendPong( x )
-						elif x['command'] == "CAP":
-							handleCAPs( x )
+						# Voodoo magic: if API handles packet, wait for next packet to do channel join.
+						if x['command'] in API.apiHandledPackets:
+							API.handleAPIPacket( x )
 						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
-							if slowConnect:
-								joinThread = threading.Thread( target=chanJoin() )
-								joinThread.start()
-							else:
-								chanJoin()
+							threading.Thread( target=chanJoin() ).start()
 				else:
 					data = makePacket( data, inbound=True )
 					recvprint( data )
-					if data['command'] == "CAP":
-						handleCAPs( data )
-					else:
-						threading.Thread( target=handlePackets( data ) ).start()
-						#handlePackets( data )
-						if ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in data['raw'] ):
-							if slowConnect:
-								joinThread = threading.Thread( target=chanJoin() )
-								joinThread.start()
-							else:
-								chanJoin()
+					threading.Thread( target=handlePackets( data ) ).start()
+					# Voodoo magic: if API handles packet, wait for next packet to do channel join.
+					if data['command'] in API.apiHandledPackets:
+						API.handleAPIPacket( data )
+					elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in data['raw'] ):
+						threading.Thread( target=chanJoin() ).start()
 		#except OSError:
 		#	errorprint( "Error! Attempting to reconect..." )
 		#	rebooted = 1
@@ -817,8 +792,8 @@ def main():
 			exit()
 
 
-#mainThread = threading.Thread( target=main(), daemon=False, name="[PyBot] Main Thread" )
-#mainThread.start()
-main()
+mainThread = threading.Thread( target=main(), daemon=False, name="[PyBot] Main Thread" )
+mainThread.start()
+#main()
 ## CORE BOT ##
 ##############

@@ -88,11 +88,6 @@ def onDie():
 def sendMessage( message, whereto ):
 	__main__.sendPacket( __main__.makePacket( "PRIVMSG " + whereto + " :" + message ) )
 
-def sendPong( pingpacket ): # PING reply
-	pingpacket['command'] = "PONG"
-	pingpacket['raw'] = pingpacket['raw'].replace( "PING", "PONG" )
-	__main__.sendPacket( pingpacket )
-
 def sendMe( message, whereto ):
 	__main__.sendPacket( __main__.makePacket( "PRIVMSG " + whereto + " :\x01ACTION " + message + "\x01" ) )
 
