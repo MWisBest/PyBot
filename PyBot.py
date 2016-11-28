@@ -16,7 +16,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import socket, sys, os, pickle, threading, random, platform, time, io, base64, importlib, traceback
+import socket, sys, os, pickle, threading, random, platform, time, io, base64, importlib
 
 # Version check.
 pyversion = platform.python_version_tuple()
@@ -61,9 +61,12 @@ def importFolder( foldername, dictaddedto="", headervar=".info" ):
 				exec( "global " + modulefolder + "\nimport " + modulefolder ) # as much as I hate exec, i cant find another way to do this!
 				if dictaddedto != "":
 					exec( "global " + dictaddedto + "dict\n" + dictaddedto + "dict[modulefolder] = " + modulefolder + headervar )
-			except ImportError as err:
+			except Exception as err:
 				print( "Failed to import: " + modulefolder )
-				print( str( err ) )
+				try: # We might not have imported pybotutils yet
+					print( pybotutils.getExceptionTraceback( err ) )
+				except:
+					print( str( err ) )
 
 # Current required modules are:
 # - colorama
@@ -307,10 +310,11 @@ def handlePackets( packet ):
 			elif args[0] == "exec" and myAccess >= 4 and database['globals']['debug']:
 				try:
 					exec( args[2] )
-				except:
+				except Exception as err:
 					# who knows what the hell we're trying here...
 					# chances are somebody is fucking up if they use exec in the first place
-					errorprint( "Unexpected error: " + str( sys.exc_info() ) )
+					errorprint( "Unexpected error: " + message )
+					warnprint( pybotutils.getExceptionTraceback( err ) )
 					sendMessage( "Yeah, you had an issue in there somewhere.", locfrom )
 			else:
 				externalCommands( args[0], args[2], user, locfrom, myAccess )
@@ -335,12 +339,7 @@ def externalCommands( cmdused, message, user, recvfrom, accessLevel ):
 				return True
 		except Exception as err: # fix your shit
 			errorprint( "Error in command: " + key )
-			warnprint( pybotutils.strbetween( str( type( err ) ), "\'", "\'" ) )
-			warnprint( str( err ) )
-			test = sys.exc_info()
-			if test and test[2]:
-				for formatted in traceback.format_tb( test[2] ):
-					warnprint( formatted )
+			warnprint( pybotutils.getExceptionTraceback( err ) )
 			continue # lets just keep going then.
 	# Let the caller know we failed to find a matching command.
 	return False
@@ -434,8 +433,10 @@ def reimportModule( args, recvfrom ):
 					doImport( args[0], args[1], reimport=False )
 					sendMessage( "Imported NEW " + args[0] + ": " + args[1], recvfrom )
 					return True
-	except:
+	except Exception as err:
 		sendMessage( "Error occurred trying to import module!", recvfrom )
+		errorprint( "Error occurred importing: " + args[1] )
+		warnprint( pybotutils.getExceptionTraceback( err ) )
 		return False
 	sendMessage( "Usage: reimport [command/handler] [name]", recvfrom )
 	return False
