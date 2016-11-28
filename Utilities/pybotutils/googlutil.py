@@ -22,7 +22,7 @@ def googlshort( link ):
 		# TODO: Why do we need to do this every time...
 		with open( "Utilities" + os.sep + "pybotutils" + os.sep + "googlapikey.txt", "r" ) as apikeyfile:
 			GOOGL_API_KEY = apikeyfile.read()
-		if "http://goo.gl/" not in link:
+		if not link.startswith( "http://goo.gl/" ) and not link.startswith( "https://goo.gl/" ):
 			json_data = "{\n\t\"longUrl\" : \"" + link + "\"\n}"
 			theheaders = { "content-type" : "application/json" }
 			res = requests.post( "https://www.googleapis.com/urlshortener/v1/url?key=" + GOOGL_API_KEY, data=json_data, headers=theheaders )
