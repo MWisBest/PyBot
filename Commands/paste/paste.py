@@ -29,7 +29,10 @@ def command( message, user, recvfrom ):
 		if pasteid != "" and pastehash != "":
 			__main__.sendMessage( "https://paste.kde.org/" + pasteid + "/" + pastehash, recvfrom )
 		else:
-			__main__.sendMessage( "Paste unsuccessful. Try again later!", recvfrom )
+			if "antispam" in txt:
+				__main__.sendMessage( "Paste filtered by anti-spam filter! Try something else.", recvfrom )
+			else:
+				__main__.sendMessage( "Paste unsuccessful. Try again later!", recvfrom )
 		return True
 	except:
 		return False
