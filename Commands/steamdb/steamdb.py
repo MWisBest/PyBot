@@ -21,28 +21,25 @@ from pybotutils import strbetween
 info = { "names" : [ "steamcalc", "steamdb" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		message = message.strip()
-		if message == "":
-			message = user
-		txt = requests.get( "https://steamdb.info/calculator/?player=" + message ).text
-		playername = strbetween( txt, "<title>", " · " )
-		if playername != "Error":
-			construct = playername + ": "
-			table = strbetween( txt, "<p><br>[list]", "[/list]</p>" )
-			worth = strbetween( table, "[*][b]Worth:[/b] ", "</p>" )
-			if worth != "":
-				construct += worth
-			owned = strbetween( table, "<p>[*][b]Games owned:[/b] ", "</p>" )
-			notplayed = strbetween( table, "<p>[*][b]Games not played:[/b] ", " [i](" )
-			if owned != "" and notplayed != "":
-				played = str( int( owned ) - int( notplayed ) )
-				construct += " | " + played + "/" + owned + " Games Played/Owned"
-			__main__.sendMessage( construct, recvfrom )
-			return True
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
-			return False
+	message = message.strip()
+	if message == "":
+		message = user
+	txt = requests.get( "https://steamdb.info/calculator/?player=" + message ).text
+	playername = strbetween( txt, "<title>", " · " )
+	if playername != "Error":
+		construct = playername + ": "
+		table = strbetween( txt, "<p><br>[list]", "[/list]</p>" )
+		worth = strbetween( table, "[*][b]Worth:[/b] ", "</p>" )
+		if worth != "":
+			construct += worth
+		owned = strbetween( table, "<p>[*][b]Games owned:[/b] ", "</p>" )
+		notplayed = strbetween( table, "<p>[*][b]Games not played:[/b] ", " [i](" )
+		if owned != "" and notplayed != "":
+			played = str( int( owned ) - int( notplayed ) )
+			construct += " | " + played + "/" + owned + " Games Played/Owned"
+		__main__.sendMessage( construct, recvfrom )
+		return True
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )
 		return False
-	except:
-		return False
+	return False

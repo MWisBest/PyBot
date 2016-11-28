@@ -22,13 +22,10 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "synonym", "thesaurus" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "http://mobile-dictionary.reverso.net/english-synonyms/" + message ).text
-		synonym = fixHTMLChars( strbetween( txt, "direction=\"target\">", "<span" ) )
-		if synonym != "":
-				__main__.sendMessage( "Synonyms for " + message + ": " + synonym, recvfrom )
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
-		return True
-	except:
-		return False
+	txt = requests.get( "http://mobile-dictionary.reverso.net/english-synonyms/" + message ).text
+	synonym = fixHTMLChars( strbetween( txt, "direction=\"target\">", "<span" ) )
+	if synonym != "":
+			__main__.sendMessage( "Synonyms for " + message + ": " + synonym, recvfrom )
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )
+	return True

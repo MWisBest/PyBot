@@ -21,37 +21,33 @@ from pybotutils import strbetween
 info = { "names" : [ "geoip" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		if message == "" or message == " ":
-			__main__.sendMessage( "Usage: geoip [ip.add.re.ss/domain.name]", recvfrom )
-			return True
-		txt = requests.get( "http://freegeoip.net/json/" + message ).text
-		ip = strbetween( txt, "\"ip\":\"", "\"," )
-		latitude = strbetween( txt, "\"latitude\":", ",\"" )
-		longitude = strbetween( txt, "\"longitude\":", ",\"" )
-		#countryCode = strbetween( txt, "\"country_code\":\"", "\"," )
-		countryName = strbetween( txt, "\"country_name\":\"", "\"," )
-		#regionCode = strbetween( txt, "\"region_code\":\"", "\"," )
-		regionName = strbetween( txt, "\"region_name\":\"", "\"," )
-		city = strbetween( txt, "\"city\":\"", "\"," )
-		#zipcode = strbetween( txt, "\"zipcode\":\"", "\"," )
-		if ip != "": # IP has to be there if there was any useful info
-			toSend = "IP: " + ip
-			if city != "" and countryName != "" and regionName != "":
-				toSend += " | Location: "
-				if city != "":
-					toSend += city + ", "
-				if regionName != "":
-					toSend += regionName + ", "
-				if countryName != "":
-					toSend += countryName
-			if latitude != "" and longitude != "":
-				toSend += " | Coordinates: " + latitude + "," + longitude
-			if toSend == "IP: " + ip + " | Coordinates: 38,-97": # This is a bullshit result
-				toSend = message + " was not found."
-			__main__.sendMessage( toSend, recvfrom )
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
+	if message == "" or message == " ":
+		__main__.sendMessage( "Usage: geoip [ip.add.re.ss/domain.name]", recvfrom )
 		return True
-	except:
-		return False
+	txt = requests.get( "http://freegeoip.net/json/" + message ).text
+	ip = strbetween( txt, "\"ip\":\"", "\"," )
+	latitude = strbetween( txt, "\"latitude\":", ",\"" )
+	longitude = strbetween( txt, "\"longitude\":", ",\"" )
+	#countryCode = strbetween( txt, "\"country_code\":\"", "\"," )
+	countryName = strbetween( txt, "\"country_name\":\"", "\"," )
+	#regionCode = strbetween( txt, "\"region_code\":\"", "\"," )
+	regionName = strbetween( txt, "\"region_name\":\"", "\"," )
+	city = strbetween( txt, "\"city\":\"", "\"," )
+	#zipcode = strbetween( txt, "\"zipcode\":\"", "\"," )
+	if ip != "": # IP has to be there if there was any useful info
+		toSend = "IP: " + ip
+		if city != "" and countryName != "" and regionName != "":
+			toSend += " | Location: "
+			if city != "":
+				toSend += city + ", "
+			if regionName != "":
+				toSend += regionName + ", "
+			if countryName != "":
+				toSend += countryName
+		if latitude != "" and longitude != "":
+			toSend += " | Coordinates: " + latitude + "," + longitude
+		if toSend == "IP: " + ip + " | Coordinates: 38,-97": # This is a bullshit result
+			toSend = message + " was not found."
+		__main__.sendMessage( toSend, recvfrom )
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )

@@ -21,12 +21,9 @@ import __main__, random
 info = { "names" : [ "choose", "choice" ], "access" : 0, "version" : 1 }
 
 def command( message, user, channel ):
-	try:
-		chooser = message.split( "," )
-		if message != "" and len( chooser ) > 1:
-			__main__.sendMessage( random.choice( chooser ), channel )
-		else:
-			__main__.sendMessage( "No comma-separated choices given.", channel )
-		return True
-	except:
-		return False
+	chooser = message.split( "," )
+	if message != "" and len( chooser ) > 1:
+		__main__.sendMessage( random.choice( chooser ), channel )
+	else:
+		__main__.sendMessage( "No comma-separated choices given.", channel )
+	return True

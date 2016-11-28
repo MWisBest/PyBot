@@ -22,16 +22,13 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "jdic", "japanese" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		message = message.strip()
-		if message != "":
-			definition = fixHTMLChars( strbetween( requests.get( "http://tangorin.com/general/" + message ).text, "<span class=\"kana\"><ruby><rb>", "</rb>" ) )
-			if definition != "":
-				__main__.sendMessage( message + ": " + definition, recvfrom )
-			else:
-				__main__.sendMessage( message + " was not found.", recvfrom )
+	message = message.strip()
+	if message != "":
+		definition = fixHTMLChars( strbetween( requests.get( "http://tangorin.com/general/" + message ).text, "<span class=\"kana\"><ruby><rb>", "</rb>" ) )
+		if definition != "":
+			__main__.sendMessage( message + ": " + definition, recvfrom )
 		else:
-			__main__.sendMessage( "Usage: jdic [words]", recvfrom )
-		return True
-	except:
-		return False
+			__main__.sendMessage( message + " was not found.", recvfrom )
+	else:
+		__main__.sendMessage( "Usage: jdic [words]", recvfrom )
+	return True

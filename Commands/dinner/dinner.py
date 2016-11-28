@@ -22,14 +22,11 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "dinner", "supper" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "http://whatthefuckshouldimakefordinner.com/" ).text
-		meal = fixHTMLChars( strbetween( txt, "\" target=\"_blank\">", "</a></dt>" ) )
-		url = fixHTMLChars( strbetween( txt, "<dt><a href=\"", "\" target=\"_blank\">" ) )
-		if meal != "" and url != "":
-			__main__.sendMessage( meal + " - " + url, recvfrom )
-		else:
-			__main__.sendMessage( "You will starve!", recvfrom )
-		return True
-	except:
-		return False
+	txt = requests.get( "http://whatthefuckshouldimakefordinner.com/" ).text
+	meal = fixHTMLChars( strbetween( txt, "\" target=\"_blank\">", "</a></dt>" ) )
+	url = fixHTMLChars( strbetween( txt, "<dt><a href=\"", "\" target=\"_blank\">" ) )
+	if meal != "" and url != "":
+		__main__.sendMessage( meal + " - " + url, recvfrom )
+	else:
+		__main__.sendMessage( "You will starve!", recvfrom )
+	return True

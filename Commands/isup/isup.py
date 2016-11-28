@@ -22,15 +22,12 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "isitdown", "isup" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		status = fixHTMLChars( strbetween( requests.get( "http://isup.me/" + message ).text, "<div id=\"container\">", "<p>" ) ).strip()
-		href = strbetween( status, "<a href=\"", "class=\"domain\">" )
-		status = status.replace( "<a href=\"" + href + "class=\"domain\">", "" )
-		status = status.replace( "</a>", "" ).replace( "</span>", "" ).replace( "  ", " " )
-		if status != "":
-			__main__.sendMessage( status, recvfrom )
-		else:
-			__main__.sendMessage( "Something went wrong.", recvfrom )
-		return True
-	except:
-		return False
+	status = fixHTMLChars( strbetween( requests.get( "http://isup.me/" + message ).text, "<div id=\"container\">", "<p>" ) ).strip()
+	href = strbetween( status, "<a href=\"", "class=\"domain\">" )
+	status = status.replace( "<a href=\"" + href + "class=\"domain\">", "" )
+	status = status.replace( "</a>", "" ).replace( "</span>", "" ).replace( "  ", " " )
+	if status != "":
+		__main__.sendMessage( status, recvfrom )
+	else:
+		__main__.sendMessage( "Something went wrong.", recvfrom )
+	return True

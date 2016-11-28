@@ -22,14 +22,11 @@ from pybotutils import fixHTMLCharsAdvanced, strbetween
 info = { "names" : [ "riddle" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "http://www.randomriddles.com/" ).text
-		riddle = fixHTMLCharsAdvanced( strbetween( txt, "<strong><i>", " <a ;" ) )
-		answer = fixHTMLCharsAdvanced( strbetween( txt, "alert('", "')\"" ) )
-		if riddle != "" and answer != "":
-			__main__.sendMessage( riddle, recvfrom )
-			# Use a timer so we don't block
-			threading.Timer( 15.0, __main__.sendMessage, args=( "Answer: " + answer, recvfrom ) ).start()
-		return True
-	except:
-		return False
+	txt = requests.get( "http://www.randomriddles.com/" ).text
+	riddle = fixHTMLCharsAdvanced( strbetween( txt, "<strong><i>", " <a ;" ) )
+	answer = fixHTMLCharsAdvanced( strbetween( txt, "alert('", "')\"" ) )
+	if riddle != "" and answer != "":
+		__main__.sendMessage( riddle, recvfrom )
+		# Use a timer so we don't block
+		threading.Timer( 15.0, __main__.sendMessage, args=( "Answer: " + answer, recvfrom ) ).start()
+	return True

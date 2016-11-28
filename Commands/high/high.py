@@ -22,11 +22,8 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "high", "thathigh", "th" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		thehigh = fixHTMLChars( strbetween( requests.get( "http://www.thathigh.com/random" ).text, "<p>", "</p>" ) )
-		if thehigh == "":
-			thehigh = "When you can't find that high..."
-		__main__.sendMessage( thehigh, recvfrom ) 
-		return True
-	except:
-		return False
+	thehigh = fixHTMLChars( strbetween( requests.get( "http://www.thathigh.com/random" ).text, "<p>", "</p>" ) )
+	if thehigh == "":
+		thehigh = "When you can't find that high..."
+	__main__.sendMessage( thehigh, recvfrom ) 
+	return True

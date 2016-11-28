@@ -22,15 +22,12 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "xbox", "xb" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "https://live.xbox.com/en-US/Profile?gamertag=" + message ).text
-		gamerscore = fixHTMLChars( strbetween( txt, "<div class=\"gamerscore\">", "</div>" ) )
-		lastseen = fixHTMLChars( strbetween( txt, "<div class=\"presence\">", "</div>" ) )
-		gamertag = fixHTMLChars( strbetween( txt, "<title>", "&#39;s Profile" ) ) #get proper case of gamertag
-		if gamerscore != "":
-			__main__.sendMessage( gamertag + " :: Status: " + lastseen + " :: Gamerscore: " + gamerscore, recvfrom )
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
-		return True
-	except:
-		return False
+	txt = requests.get( "https://live.xbox.com/en-US/Profile?gamertag=" + message ).text
+	gamerscore = fixHTMLChars( strbetween( txt, "<div class=\"gamerscore\">", "</div>" ) )
+	lastseen = fixHTMLChars( strbetween( txt, "<div class=\"presence\">", "</div>" ) )
+	gamertag = fixHTMLChars( strbetween( txt, "<title>", "&#39;s Profile" ) ) #get proper case of gamertag
+	if gamerscore != "":
+		__main__.sendMessage( gamertag + " :: Status: " + lastseen + " :: Gamerscore: " + gamerscore, recvfrom )
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )
+	return True

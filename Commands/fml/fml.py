@@ -21,14 +21,11 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "fml", "fmylife" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		thefml = requests.get( "http://www.fmylife.com/random" ).text
-		thefml = strbetween( thefml, "<p class=\"content\">", "</p>" )
-		thefml = strbetween( thefml, ">", "</a>" )
-		thefml = fixHTMLChars( thefml )
-		if thefml == "":
-			thefml = "Today, PyBot couldn't find an FML. FML"
-		__main__.sendMessage( thefml, recvfrom )
-		return True
-	except:
-		return False
+	thefml = requests.get( "http://www.fmylife.com/random" ).text
+	thefml = strbetween( thefml, "<p class=\"content\">", "</p>" )
+	thefml = strbetween( thefml, ">", "</a>" )
+	thefml = fixHTMLChars( thefml )
+	if thefml == "":
+		thefml = "Today, PyBot couldn't find an FML. FML"
+	__main__.sendMessage( thefml, recvfrom )
+	return True

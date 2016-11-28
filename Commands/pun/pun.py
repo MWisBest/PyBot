@@ -21,11 +21,8 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "pun", "joke" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		pun = fixHTMLChars( strbetween( requests.get( "http://www.punoftheday.com/cgi-bin/randompun.pl" ).text, "<p>", "</p>" ) )
-		if pun == "":
-			pun = "No pun for you!"
-		__main__.sendMessage( pun, recvfrom )
-		return True
-	except:
-		return False
+	pun = fixHTMLChars( strbetween( requests.get( "http://www.punoftheday.com/cgi-bin/randompun.pl" ).text, "<p>", "</p>" ) )
+	if pun == "":
+		pun = "No pun for you!"
+	__main__.sendMessage( pun, recvfrom )
+	return True

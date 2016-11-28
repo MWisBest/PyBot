@@ -21,11 +21,8 @@ from pybotutils import strbetween
 info = { "names" : [ "wotd", "wordoftheday" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		thewotd = strbetween( requests.get( "http://dictionary.reference.com/wordoftheday/" ).text, "<title>Get the Word of the Day - ", " |" )
-		if thewotd == "":
-			thewotd = "fail"
-		__main__.sendMessage( "Word of the Day: " + thewotd, recvfrom )
-		return True
-	except:
-		return False
+	thewotd = strbetween( requests.get( "http://dictionary.reference.com/wordoftheday/" ).text, "<title>Get the Word of the Day - ", " |" )
+	if thewotd == "":
+		thewotd = "fail"
+	__main__.sendMessage( "Word of the Day: " + thewotd, recvfrom )
+	return True

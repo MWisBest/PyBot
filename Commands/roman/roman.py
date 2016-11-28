@@ -23,28 +23,25 @@ romanNumeralMap = ( ( "M",  1000 ), ( "CM", 900 ), ( "D",  500 ), ( "CD", 400 ),
 romanNumeralPattern = re.compile( r"^M{0,249}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$" )
 
 def command( message, user, channel ):
-	try:
-		result = ""
-		if message.isdigit() and "." not in message: # Numeric, convert to roman numerals
-			number = int( message )
-			if 250000 > number > 0:
-				for ( numeral, integer ) in romanNumeralMap:
-					while number >= integer:
-						result = result + numeral
-						number = number - integer
-			else:
-				result = "Can't be less than 1, and I'm not going over 249,999 either!"
-		elif romanNumeralPattern.search( message ):
-			intsult = 0
-			index = 0
+	result = ""
+	if message.isdigit() and "." not in message: # Numeric, convert to roman numerals
+		number = int( message )
+		if 250000 > number > 0:
 			for ( numeral, integer ) in romanNumeralMap:
-				while message[index:index+len(numeral)] == numeral:
-					intsult = intsult + integer
-					index = index + len( numeral )
-			result = str( intsult )
+				while number >= integer:
+					result = result + numeral
+					number = number - integer
 		else:
-			result = "I only accept integers and valid roman numerals from 1 to 249,999."
-		__main__.sendMessage( result, channel )
-		return True
-	except:
-		return False
+			result = "Can't be less than 1, and I'm not going over 249,999 either!"
+	elif romanNumeralPattern.search( message ):
+		intsult = 0
+		index = 0
+		for ( numeral, integer ) in romanNumeralMap:
+			while message[index:index+len(numeral)] == numeral:
+				intsult = intsult + integer
+				index = index + len( numeral )
+		result = str( intsult )
+	else:
+		result = "I only accept integers and valid roman numerals from 1 to 249,999."
+	__main__.sendMessage( result, channel )
+	return True

@@ -22,14 +22,11 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "dict", "define", "dictionary", "definition" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "http://mobile-dictionary.reverso.net/english-definition/" + message ).text
-		definition = fixHTMLChars( strbetween( txt, "direction=\"target\">", "<span" ) )
-		type = fixHTMLChars( strbetween( txt, "style=\"color:#B50000;\" direction=\"\">", "<span" ) )
-		if definition != "":
-				__main__.sendMessage( message + ": " + type + " - " + definition, recvfrom )
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
-		return True
-	except:
-		return False
+	txt = requests.get( "http://mobile-dictionary.reverso.net/english-definition/" + message ).text
+	definition = fixHTMLChars( strbetween( txt, "direction=\"target\">", "<span" ) )
+	type = fixHTMLChars( strbetween( txt, "style=\"color:#B50000;\" direction=\"\">", "<span" ) )
+	if definition != "":
+			__main__.sendMessage( message + ": " + type + " - " + definition, recvfrom )
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )
+	return True

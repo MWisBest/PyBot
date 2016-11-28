@@ -16,7 +16,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import socket, sys, os, pickle, threading, random, platform, time, io, base64, importlib
+import socket, sys, os, pickle, threading, random, platform, time, io, base64, importlib, traceback
 
 # Version check.
 pyversion = platform.python_version_tuple()
@@ -63,7 +63,7 @@ def importFolder( foldername, dictaddedto="", headervar=".info" ):
 					exec( "global " + dictaddedto + "dict\n" + dictaddedto + "dict[modulefolder] = " + modulefolder + headervar )
 			except ImportError as err:
 				print( "Failed to import: " + modulefolder )
-				print( err )
+				print( str( err ) )
 
 # Current required modules are:
 # - colorama
@@ -102,8 +102,8 @@ senddebugprint = lambda x, y: termcolor.cprint( "[" + time.strftime( "%H:%M:%S",
 recvdebugprint = lambda x, y: termcolor.cprint( "[" + time.strftime( "%H:%M:%S", time.localtime( y ) ) + " <<-] " + x, "green" )
 sendregularprint = lambda x, y: termcolor.cprint( "[" + time.strftime( "%H:%M:%S", time.localtime( y ) ) + "] " + x, "cyan" )
 recvregularprint = lambda x, y: termcolor.cprint( "[" + time.strftime( "%H:%M:%S", time.localtime( y ) ) + "] " + x, "green" )
-errorprint = lambda x: termcolor.cprint( x.replace( "\r", "" ).replace( "\n", "" ), "red", attrs=['bold'] )
-warnprint = lambda x: termcolor.cprint( x.replace( "\r", "" ).replace( "\n", "" ), "yellow", attrs=['bold'] )
+errorprint = lambda x: termcolor.cprint( x.replace( "\r", "" ), "red", attrs=['bold'] )
+warnprint = lambda x: termcolor.cprint( x.replace( "\r", "" ), "yellow", attrs=['bold'] )
 ## CONSOLE OUTPUT SETUP ##
 ##########################
 
@@ -310,7 +310,7 @@ def handlePackets( packet ):
 				except:
 					# who knows what the hell we're trying here...
 					# chances are somebody is fucking up if they use exec in the first place
-					print( "Unexpected error: " + str( sys.exc_info() ) )
+					errorprint( "Unexpected error: " + str( sys.exc_info() ) )
 					sendMessage( "Yeah, you had an issue in there somewhere.", locfrom )
 			else:
 				externalCommands( args[0], args[2], user, locfrom, myAccess )
@@ -333,7 +333,14 @@ def externalCommands( cmdused, message, user, recvfrom, accessLevel ):
 				# We don't need to keep iterating if we got what we need;
 				# Let the caller know we succeeded.
 				return True
-		except: # fix your shit
+		except Exception as err: # fix your shit
+			errorprint( "Error in command: " + key )
+			warnprint( pybotutils.strbetween( str( type( err ) ), "\'", "\'" ) )
+			warnprint( str( err ) )
+			test = sys.exc_info()
+			if test and test[2]:
+				for formatted in traceback.format_tb( test[2] ):
+					warnprint( formatted )
 			continue # lets just keep going then.
 	# Let the caller know we failed to find a matching command.
 	return False
@@ -436,26 +443,27 @@ def reimportModule( args, recvfrom ):
 def changeDebug( message, recvfrom ):
 	global database
 	message = message.lower().strip()
+	
 	if message == "": # Toggle it in this case
 		database['globals']['debug'] = not database['globals']['debug']
-		if database['globals']['debug']:
-			sendMessage( "Debugging: enabled.", recvfrom )
-		else:
-			sendMessage( "Debugging: disabled.", recvfrom )
-		saveDatabase()
-		return True
 	elif message == "on" or message == "true":
 		database['globals']['debug'] = True
-		sendMessage( "Debugging: enabled.", recvfrom )
-		saveDatabase()
-		return True
 	elif message == "off" or message == "false":
 		database['globals']['debug'] = False
+	else:
+		sendMessage( "Usage: debug <on/true/off/false>", recvfrom )
+		return False
+
+	# NOTE: This function is hard to follow. The basic idea is this:
+	#       If we've fallen through this far, we didn't send the usage message.
+	#       So, rather than call saveDatabase and sendMessage in each of the
+	#       three valid, non-usage cases, just handle it all at once here.
+	if database['globals']['debug']:
+		sendMessage( "Debugging: enabled.", recvfrom )
+	else:
 		sendMessage( "Debugging: disabled.", recvfrom )
-		saveDatabase()
-		return True
-	sendMessage( "Usage: debug <on/true/off/false>", recvfrom )
-	return False
+	saveDatabase()
+	return True
 ## BOTDEV STUFF ##
 ##################
 
@@ -768,7 +776,7 @@ def main():
 				if data.count( "\n" ) <= 1:
 					data = makePacket( data, inbound=True )
 					recvprint( data )
-					handlePackets( data )
+					threading.Thread( target=handlePackets( data ) ).start()
 					# Voodoo magic: if API handles packet, wait for next packet to do channel join.
 					if data['command'] in API.apiHandledPackets:
 						API.handleAPIPacket( data )

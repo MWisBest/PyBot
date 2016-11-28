@@ -21,12 +21,9 @@ from pybotutils import googlshort
 info = { "names" : [ "googl" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		link = googlshort( message )
-		if link != "":
-			__main__.sendMessage( link, recvfrom )
-		else:
-			__main__.sendMessage( "Fix your shit.", recvfrom )
-		return True
-	except:
-		return False
+	link = googlshort( message )
+	if link != "":
+		__main__.sendMessage( link, recvfrom )
+	else:
+		__main__.sendMessage( "Fix your shit.", recvfrom )
+	return True

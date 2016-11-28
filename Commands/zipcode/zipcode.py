@@ -22,17 +22,14 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "zipcode", "zipinfo", "zip" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = fixHTMLChars( requests.get( "http://www.zip-info.com/cgi-local/zipsrch.exe?ac=ac&tz=tz&zip=" + message + "&Go=Go" ).text )
-		city = strbetween( txt, "</th></tr><tr><td align=center>", "</font>" )
-		state = strbetween( txt, "</font></td><td align=center>", "</font></td><td align=center>" )
-		acode = strbetween( txt, "<td align=center>" + message + "</font></td><td align=center>", "</font>" )
-		timezone = strbetween( txt, acode + "</font></td><td align=center>", "</font></td><td align=center>Yes</font></td></tr></table>" )
-
-		if zip != "":
-			__main__.sendMessage( "Zip: " + message + " | City: " + city + " | State: " + state + " | Area Code: " + acode + " | Time Zone: " + timezone, recvfrom )
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
-		return True
-	except:
-		return False
+	txt = fixHTMLChars( requests.get( "http://www.zip-info.com/cgi-local/zipsrch.exe?ac=ac&tz=tz&zip=" + message + "&Go=Go" ).text )
+	city = strbetween( txt, "</th></tr><tr><td align=center>", "</font>" )
+	state = strbetween( txt, "</font></td><td align=center>", "</font></td><td align=center>" )
+	acode = strbetween( txt, "<td align=center>" + message + "</font></td><td align=center>", "</font>" )
+	timezone = strbetween( txt, acode + "</font></td><td align=center>", "</font></td><td align=center>Yes</font></td></tr></table>" )
+	
+	if zip != "":
+		__main__.sendMessage( "Zip: " + message + " | City: " + city + " | State: " + state + " | Area Code: " + acode + " | Time Zone: " + timezone, recvfrom )
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )
+	return True

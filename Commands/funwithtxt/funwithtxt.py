@@ -27,9 +27,6 @@ for file in os.listdir( txtdir ):
 		info['names'].append( file[:-4] )
 
 def command( cmdused, message, user, channel ):
-	try:
-		with open( txtdir + cmdused + ".txt", "r", encoding="utf-8" ) as funtxt:
-			__main__.sendMessage( random.choice( funtxt.readlines() ), channel )
-		return True
-	except:
-		return False
+	with open( txtdir + cmdused + ".txt", "r", encoding="utf-8" ) as funtxt:
+		__main__.sendMessage( random.choice( funtxt.readlines() ), channel )
+	return True

@@ -21,18 +21,15 @@ import __main__, requests
 info = { "names" : [ "haveibeenpwned", "pwned", "hacked" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "https://haveibeenpwned.com/api/breachedaccount/" + message ).text
-		if txt.startswith( "[\"" ):
-			txt = txt.replace( "[", "" ).replace( "]", "" ).replace( "\"", "" ).replace( ",", ", " )
-			if txt != "":
-				__main__.sendMessage( message + " has been pwned on: " + txt, recvfrom )
-			else:
-				__main__.sendMessage( message + " seems to be safe!", recvfrom )
-		elif txt == "":
-			__main__.sendMessage( message + " seems to be safe!", recvfrom )
+	txt = requests.get( "https://haveibeenpwned.com/api/breachedaccount/" + message ).text
+	if txt.startswith( "[\"" ):
+		txt = txt.replace( "[", "" ).replace( "]", "" ).replace( "\"", "" ).replace( ",", ", " )
+		if txt != "":
+			__main__.sendMessage( message + " has been pwned on: " + txt, recvfrom )
 		else:
-			__main__.sendMessage( "Error in command. Try again!", recvfrom )
-		return True
-	except:
-		return False
+			__main__.sendMessage( message + " seems to be safe!", recvfrom )
+	elif txt == "":
+		__main__.sendMessage( message + " seems to be safe!", recvfrom )
+	else:
+		__main__.sendMessage( "Error in command. Try again!", recvfrom )
+	return True

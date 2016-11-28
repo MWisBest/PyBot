@@ -22,11 +22,8 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "fact" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		thefact = fixHTMLChars( strbetween( requests.get( "http://randomfunfacts.com/" ).text, "<font face=\"Verdana\" size=\"4\"><strong><i>", "</i></strong>" ) )
-		if thefact == "":
-			thefact = "I failed to fetch an actual fact. Sorry!"
-		__main__.sendMessage( thefact, recvfrom )
-		return True
-	except:
-		return False
+	thefact = fixHTMLChars( strbetween( requests.get( "http://randomfunfacts.com/" ).text, "<font face=\"Verdana\" size=\"4\"><strong><i>", "</i></strong>" ) )
+	if thefact == "":
+		thefact = "I failed to fetch an actual fact. Sorry!"
+	__main__.sendMessage( thefact, recvfrom )
+	return True

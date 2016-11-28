@@ -22,11 +22,8 @@ from pybotutils import fixHTMLCharsAdvanced, strbetween
 info = { "names" : [ "haiku" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		thehaiku = fixHTMLCharsAdvanced( strbetween( requests.get( "http://prestopnik.com/emo_haiku/" ).text, "<div align=center><BR><BR>", "<BR><BR><BR><BR></div>" ) ).replace( "<BR>", " " )
-		if thehaiku == "":
-			thehaiku = "I should probably. Write an actual haiku. For error message."
-		__main__.sendMessage( thehaiku, recvfrom )
-		return True
-	except:
-		return False
+	thehaiku = fixHTMLCharsAdvanced( strbetween( requests.get( "http://prestopnik.com/emo_haiku/" ).text, "<div align=center><BR><BR>", "<BR><BR><BR><BR></div>" ) ).replace( "<BR>", " " )
+	if thehaiku == "":
+		thehaiku = "I should probably. Write an actual haiku. For error message."
+	__main__.sendMessage( thehaiku, recvfrom )
+	return True

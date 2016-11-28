@@ -21,18 +21,15 @@ from pybotutils import strbetween
 info = { "names" : [ "paste", "kdepaste", "pastebin", "kdepaste", "pastie" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		json_data = { "title" : recvfrom, "data" : message, "language" : "text", "expire" : "31536000", "private" : "true" }
-		txt = requests.post( "https://paste.kde.org/api/json/create", data=json_data ).text
-		pasteid = strbetween( txt, "\"id\": \"", "\"," )
-		pastehash = strbetween( txt, "\"hash\": \"", "\"" )
-		if pasteid != "" and pastehash != "":
-			__main__.sendMessage( "https://paste.kde.org/" + pasteid + "/" + pastehash, recvfrom )
+	json_data = { "title" : recvfrom, "data" : message, "language" : "text", "expire" : "31536000", "private" : "true" }
+	txt = requests.post( "https://paste.kde.org/api/json/create", data=json_data ).text
+	pasteid = strbetween( txt, "\"id\": \"", "\"," )
+	pastehash = strbetween( txt, "\"hash\": \"", "\"" )
+	if pasteid != "" and pastehash != "":
+		__main__.sendMessage( "https://paste.kde.org/" + pasteid + "/" + pastehash, recvfrom )
+	else:
+		if "antispam" in txt:
+			__main__.sendMessage( "Paste filtered by anti-spam filter! Try something else.", recvfrom )
 		else:
-			if "antispam" in txt:
-				__main__.sendMessage( "Paste filtered by anti-spam filter! Try something else.", recvfrom )
-			else:
-				__main__.sendMessage( "Paste unsuccessful. Try again later!", recvfrom )
-		return True
-	except:
-		return False
+			__main__.sendMessage( "Paste unsuccessful. Try again later!", recvfrom )
+	return True

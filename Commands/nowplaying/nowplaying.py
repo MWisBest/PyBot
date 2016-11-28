@@ -21,25 +21,22 @@ from pybotutils import fixHTMLChars, strbetween
 info = { "names" : [ "nowplaying", "np", "lastfm" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = fixHTMLChars( requests.get( "http://ws.audioscrobbler.com/2.0/user/" + message + "/recenttracks.xml?limit=1" ).text )
-		artist = strbetween( txt, "<artist>", "</artist>" )
-		song = strbetween( txt, "<name>", "</name>" )
-		album = strbetween( txt, "<album>", "</album>" )
-		
-		if album != "":
-			albumtext = " from the album " + album
-		else:
-			albumtext = ""
-		
-		if "<track nowplaying=\"true\">" in txt:
-			nowplaying = " is listening "
-		else:
-			nowplaying = " last listened "
-		if song != "":
-			__main__.sendMessage( message + nowplaying + "to " + song + " by " + artist + albumtext, recvfrom )
-		else:
-			__main__.sendMessage( message + " was not found.", recvfrom )
-		return True
-	except:
-		return False
+	txt = fixHTMLChars( requests.get( "http://ws.audioscrobbler.com/2.0/user/" + message + "/recenttracks.xml?limit=1" ).text )
+	artist = strbetween( txt, "<artist>", "</artist>" )
+	song = strbetween( txt, "<name>", "</name>" )
+	album = strbetween( txt, "<album>", "</album>" )
+	
+	if album != "":
+		albumtext = " from the album " + album
+	else:
+		albumtext = ""
+	
+	if "<track nowplaying=\"true\">" in txt:
+		nowplaying = " is listening "
+	else:
+		nowplaying = " last listened "
+	if song != "":
+		__main__.sendMessage( message + nowplaying + "to " + song + " by " + artist + albumtext, recvfrom )
+	else:
+		__main__.sendMessage( message + " was not found.", recvfrom )
+	return True

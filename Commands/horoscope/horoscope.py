@@ -24,19 +24,16 @@ info = { "names" : [ "horoscope", "zodiac", "sign", "horo" ], "access" : 0, "ver
 signs = [ "aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces" ]
 
 def command( message, user, recvfrom ):
-	try:
-		message = message.strip().lower()
-		if message in signs:
-			txt = requests.get( "http://www.astrology.com/horoscope/daily/" + message + ".html" ).text
-			horoscope = fixHTMLCharsAdvanced( strbetween( txt, "<div class=\"page-horoscope-text\">", "</div>" ) )
-			if horoscope != "":
-				__main__.sendMessage( horoscope, recvfrom )
-			else:
-				__main__.sendMessage( message + "'s sign not found today. :(", recvfrom )
-		elif message == "":
-			__main__.sendMessage( "Usage: horoscope [sign]", recvfrom )
+	message = message.strip().lower()
+	if message in signs:
+		txt = requests.get( "http://www.astrology.com/horoscope/daily/" + message + ".html" ).text
+		horoscope = fixHTMLCharsAdvanced( strbetween( txt, "<div class=\"page-horoscope-text\">", "</div>" ) )
+		if horoscope != "":
+			__main__.sendMessage( horoscope, recvfrom )
 		else:
-			__main__.sendMessage( "Invalid sign. Valid signs: " + (", ".join( signs )), recvfrom )
-		return True
-	except:
-		return False
+			__main__.sendMessage( message + "'s sign not found today. :(", recvfrom )
+	elif message == "":
+		__main__.sendMessage( "Usage: horoscope [sign]", recvfrom )
+	else:
+		__main__.sendMessage( "Invalid sign. Valid signs: " + (", ".join( signs )), recvfrom )
+	return True

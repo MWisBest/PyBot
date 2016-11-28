@@ -22,12 +22,9 @@ from pybotutils import fixHTMLCharsAdvanced, strbetween
 info = { "names" : [ "qdb", "bash" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	try:
-		txt = requests.get( "http://qdb.us/random/" ).text
-		quoteNum = fixHTMLCharsAdvanced( strbetween( txt, "\">#", "</a>" ) )
-		quote = fixHTMLCharsAdvanced( strbetween( txt, "<span class=qt id=qt" + quoteNum , "</span>" ) )
-		quote = quote.replace( "<br />", " / " )
-		__main__.sendMessage( "Quote #" + quoteNum + ": " + quote, recvfrom )
-		return True
-	except:
-		return False
+	txt = requests.get( "http://qdb.us/random/" ).text
+	quoteNum = fixHTMLCharsAdvanced( strbetween( txt, "\">#", "</a>" ) )
+	quote = fixHTMLCharsAdvanced( strbetween( txt, "<span class=qt id=qt" + quoteNum , "</span>" ) )
+	quote = quote.replace( "<br />", " / " )
+	__main__.sendMessage( "Quote #" + quoteNum + ": " + quote, recvfrom )
+	return True
