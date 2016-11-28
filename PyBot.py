@@ -173,7 +173,7 @@ try:
 		database['api']['ircsettings'] = {}
 		database['api']['ircsettings']['channels'] = database['botInfo']['chanels']
 		database['api']['ircsettings']['nick']     = database['botInfo']['nick']
-		database['api']['ircsettings']['password'] = database['botInfo']['password']
+		database['api']['ircsettings']['pw']       = database['botInfo']['password']
 		database['api']['ircsettings']['network']  = database['botInfo']['network']
 		database['api']['ircsettings']['port']     = database['botInfo']['port']
 		del database['botInfo']['channels']
@@ -181,9 +181,11 @@ try:
 		del database['botInfo']['password']
 		del database['botInfo']['network']
 		del database['botInfo']['port']
+		database['version'] = 4
+		saveDatabase()
 except IOError: # Create pybot.pickle on first start
 	#, "network" : "", "port" : 0, "channels" : []
-	database = { "api"        : { "system" : "irc", "ircsettings" : { "channels" : [], "nick" : "", "password" : base64.b85encode( "".encode( "utf-8" ), pad=True ), "network" : "", "port" : -1 } },
+	database = { "api"        : { "system" : "irc", "ircsettings" : { "channels" : [], "nick" : "", "pw" : base64.b85encode( "".encode( "utf-8" ), pad=True ), "network" : "", "port" : -1 } },
 				 "accessList" : {},
 				 "globals"    : { "cc" : "!", "reverse" : False, "debug" : False },
 				 "version"    : 4 }
@@ -311,7 +313,7 @@ def handlePackets( packet ):
 					print( "Unexpected error: " + str( sys.exc_info() ) )
 					sendMessage( "Yeah, you had an issue in there somewhere.", locfrom )
 			else:
-				 externalCommands( args[0], args[2], user, locfrom, myAccess )
+				externalCommands( args[0], args[2], user, locfrom, myAccess )
 			runThroughHandlers = False
 	if runThroughHandlers: # Try all the external handlers then.
 		externalHandlers( packet )
@@ -763,7 +765,16 @@ def main():
 		try:
 			data = sock.recv( 8192 ).decode( errors="ignore" )
 			if len( data ) > 2:	# Don't parse small stuff
-				if data.count( "\n" ) > 1:	# More than 1 packet sent, most likely start connection
+				if data.count( "\n" ) <= 1:
+					data = makePacket( data, inbound=True )
+					recvprint( data )
+					handlePackets( data )
+					# Voodoo magic: if API handles packet, wait for next packet to do channel join.
+					if data['command'] in API.apiHandledPackets:
+						API.handleAPIPacket( data )
+					elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in data['raw'] ):
+						threading.Thread( target=chanJoin() ).start()
+				else: # More than 1 packet sent, most likely start connection
 					data = data.splitlines()
 					for x in data:
 						x = makePacket( x, inbound=True )
@@ -774,15 +785,6 @@ def main():
 							API.handleAPIPacket( x )
 						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
 							threading.Thread( target=chanJoin() ).start()
-				else:
-					data = makePacket( data, inbound=True )
-					recvprint( data )
-					threading.Thread( target=handlePackets( data ) ).start()
-					# Voodoo magic: if API handles packet, wait for next packet to do channel join.
-					if data['command'] in API.apiHandledPackets:
-						API.handleAPIPacket( data )
-					elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in data['raw'] ):
-						threading.Thread( target=chanJoin() ).start()
 		#except OSError:
 		#	errorprint( "Error! Attempting to reconect..." )
 		#	rebooted = 1

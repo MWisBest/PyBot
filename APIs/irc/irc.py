@@ -51,9 +51,9 @@ def join():
 	# Auth should (try) to be done before join.
 	# It's not realistic to expect that to happen with NickServ/PM-based auth however,
 	# but let's give it a little head start at least.
-	password = ( base64.b85decode( __main__.database['api']['ircsettings']['password'] ) ).decode( "utf-8" )
-	if password != "" and "sasl" not in CAPs['enabled']:
-		__main__.sendPacket( __main__.makePacket( "PRIVMSG NickServ :IDENTIFY " + password ), forceDebugPrint=True )
+	pw = ( base64.b85decode( __main__.database['api']['ircsettings']['pw'] ) ).decode( "utf-8" )
+	if pw != "" and "sasl" not in CAPs['enabled']:
+		__main__.sendPacket( __main__.makePacket( "PRIVMSG NickServ :IDENTIFY " + pw ), forceDebugPrint=True )
 	
 	__main__.sendPacket( __main__.makePacket( "JOIN " + ",".join( __main__.database['api']['ircsettings']['channels'] ) ), forceDebugPrint=True )
 	return True
@@ -88,8 +88,8 @@ def handleCAPs( packet ):
 		if "sasl" in CAPs['enabled']:
 			__main__.sendPacket( __main__.makePacket( "AUTHENTICATE PLAIN" ) )
 			data = __main__.sock.recv( 512 ).decode( errors="ignore" )
-			password = ( base64.b85decode( __main__.database['api']['ircsettings']['password'] ) ).decode( "utf-8" )
-			__main__.sendPacket( __main__.makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (__main__.database['api']['ircsettings']['nick'], __main__.database['api']['ircsettings']['nick'], password) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
+			pw = ( base64.b85decode( __main__.database['api']['ircsettings']['pw'] ) ).decode( "utf-8" )
+			__main__.sendPacket( __main__.makePacket( "AUTHENTICATE " + (base64.b64encode( '\0'.join( (__main__.database['api']['ircsettings']['nick'], __main__.database['api']['ircsettings']['nick'], pw) ).encode( "utf-8" ) )).decode( "utf-8" ) ) )
 			data = __main__.sock.recv( 2048 ).decode( errors="ignore" )
 			__main__.sendPacket( __main__.makePacket( "CAP END" ) )
 			__main__.loggedIn = True
