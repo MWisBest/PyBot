@@ -20,6 +20,8 @@ from pybotutils import fixHTMLCharsAdvanced, googlshort, strbetween
 
 info = { "names" : [ "urban", "ud", "rurban" ], "access" : 0, "version" : 2 }
 
+notDefinedPrefix = "<p>There aren't any definitions for <i>"
+
 def command( command, message, user, recvfrom ):
 	link = "http://www.urbandictionary.com/"
 	if command != "rurban":
@@ -29,7 +31,7 @@ def command( command, message, user, recvfrom ):
 	txt = requests.get( link ).text
 	definition = fixHTMLCharsAdvanced( strbetween( txt, "<div class='meaning'>\n", "\n</div>" ) )
 	word = fixHTMLCharsAdvanced( strbetween( txt, "<title>Urban Dictionary: ", "</title>" ) )
-	if definition != "" and word != "":
+	if definition != "" and word != "" and not definition.startswith( notDefinedPrefix ):
 		toSend = word + ": " + definition
 		if len( toSend ) >= 370: # This is roughly the longest message I've been able to send.
 			shortLink = googlshort( "http://www.urbandictionary.com/define.php?term=" + word ) # Get a short link here in order to send as much as possible
@@ -39,11 +41,10 @@ def command( command, message, user, recvfrom ):
 			toSend += "... " + shortLink # Finally finishing it off
 		__main__.sendMessage( toSend, recvfrom )
 		return True
+	elif definition.startswith( notDefinedPrefix ):
+		__main__.sendMessage( message + " isn't defined.", recvfrom )
+		return True
 	else:
-		if "<i>" + message + "</i> isn't defined.<br/>Can you define it?" in txt:
-			__main__.sendMessage( message + " isn't defined.", recvfrom )
-			return True
-		else:
-			__main__.sendMessage( "There was a problem. Fix your shit.", recvfrom )
-			return False
+		__main__.sendMessage( "There was a problem. Fix your shit.", recvfrom )
+		return False
 	return False
