@@ -23,7 +23,7 @@ info = { "names" : [ "choose", "choice" ], "access" : 0, "version" : 1 }
 def command( message, user, channel ):
 	chooser = message.split( "," )
 	if message != "" and len( chooser ) > 1:
-		__main__.sendMessage( random.choice( chooser ), channel )
+		__main__.sendMessage( random.choice( chooser ).strip(), channel )
 	else:
 		__main__.sendMessage( "No comma-separated choices given.", channel )
 	return True
