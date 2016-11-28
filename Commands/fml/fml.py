@@ -22,7 +22,10 @@ info = { "names" : [ "fml", "fmylife" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
 	try:
-		thefml = fixHTMLChars( strbetween( requests.get( "http://m.fmylife.com/random" ).text, "<p class=\"text\">", "</p>" ) )
+		thefml = requests.get( "http://www.fmylife.com/random" ).text
+		thefml = strbetween( thefml, "<p class=\"content\">", "</p>" )
+		thefml = strbetween( thefml, ">", "</a>" )
+		thefml = fixHTMLChars( thefml )
 		if thefml == "":
 			thefml = "Today, PyBot couldn't find an FML. FML"
 		__main__.sendMessage( thefml, recvfrom )
