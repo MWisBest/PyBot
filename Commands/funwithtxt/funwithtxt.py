@@ -1,6 +1,7 @@
 ###########################################################################
 ## PyBot                                                                 ##
-## Copyright (C) 2015, Kyle Repinski                                     ##
+## Copyright (C) 2015-2016, Kyle Repinski                                ##
+## Copyright (C) 2015, Andres Preciado (Glitch)                          ##
 ##                                                                       ##
 ## This program is free software: you can redistribute it and/or modify  ##
 ## it under the terms of the GNU General Public License as published by  ##
@@ -17,12 +18,18 @@
 ###########################################################################
 import __main__, os, random
 
-info = { "names" : [ "8ball", "8b", "eightball" ], "access" : 0, "version" : 1 }
+txtdir = os.path.dirname( os.path.realpath( __file__ ) ) + os.sep
 
-def command( message, user, recvfrom ):
+info = { "names" : [ "funwithtxt" ], "access" : 0, "version" : 2 }
+
+for file in os.listdir( txtdir ):
+	if file.endswith( ".txt" ) and os.path.isfile( txtdir + file ) and file[:-4] not in info['names']:
+		info['names'].append( file[:-4] )
+
+def command( cmdused, message, user, channel ):
 	try:
-		with open( os.path.dirname( os.path.realpath( __file__ ) ) + os.sep + "eightball.txt", "r" ) as eightballtxt:
-			__main__.sendMessage( user + ": " + random.choice( eightballtxt.readlines() ), recvfrom )
+		with open( txtdir + cmdused + ".txt", "r", encoding="utf-8" ) as funtxt:
+			__main__.sendMessage( random.choice( funtxt.readlines() ), channel )
 		return True
 	except:
 		return False
