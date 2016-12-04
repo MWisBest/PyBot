@@ -15,13 +15,12 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import __main__, requests, pybotutils
-from pybotutils import googlshort
+import __main__, pybotutils
 
 info = { "names" : [ "googl" ], "access" : 0, "version" : 1 }
 
 def command( message, user, recvfrom ):
-	link = googlshort( message )
+	link = pybotutils.googlshort( message )
 	if link != "":
 		__main__.sendMessage( link, recvfrom )
 	else:
