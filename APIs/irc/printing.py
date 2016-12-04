@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import __main__
+import __main__, pybotutils
 
 def sendprint( packet ):
 	try:
@@ -59,10 +59,14 @@ def sendprint( packet ):
 			elif packet['command'] == "TOPIC":
 				locTopic = packetrest.partition( " :" )
 				toprint = "[" + locTopic[0] + "] " + user + " has changed the topic to: " + locTopic[2]
+			elif packet['command'] == "INVITE":
+				locMessage = packetrest.partition( " :" )
+				toprint = user + " has invited " + locMessage[0] + " to " + locMessage[2]
 			if toprint != "":
 				__main__.sendregularprint( toprint, packet['timestamp'] )
-	except: # Really. REALLY.
-		__main__.warnprint( "Last sendprint had an exception. Caught, but yeah. Something's wrong on your end." )
+	except Exception as err: # Really. REALLY.
+		__main__.errorprint( "Exception in sendprint:" )
+		__main__.warnprint( pybotutils.getExceptionTraceback( err ) )
 
 
 def recvprint( packet ):
@@ -116,6 +120,9 @@ def recvprint( packet ):
 				if user != __main__.database['api']['ircsettings']['nick']: # Jeez, we even get our own TOPICs!
 					locTopic = packetrest.partition( " :" )
 					toprint = "[" + locTopic[0] + "] " + user + " has changed the topic to: " + locTopic[2]
+			elif packet['command'] == "INVITE":
+				locMessage = packetrest.partition( " :" )
+				toprint = user + " has invited " + locMessage[0] + " to " + locMessage[2]
 			elif packet['command'] == "MODE":
 				modemap = {
 					"v" : { "name" : "voice", "priority" : 1 },
@@ -155,6 +162,6 @@ def recvprint( packet ):
 						toprint = ""
 			if toprint != "":
 				__main__.recvregularprint( toprint, packet['timestamp'] )
-	except: # Really. REALLY.
-		#print( "Unexpected error: ", sys.exc_info()[0] )
-		__main__.warnprint( "Last recvprint had an exception. Caught, but yeah. Something's wrong on your end." )
+	except Exception as err: # Really. REALLY.
+		__main__.errorprint( "Exception in recvprint:" )
+		__main__.warnprint( pybotutils.getExceptionTraceback( err ) )
