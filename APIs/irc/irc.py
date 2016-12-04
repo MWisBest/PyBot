@@ -25,6 +25,8 @@ apiHandledPackets = [ "PING", "CAP" ]
 
 
 def connect():
+	# something something ping timeout
+	__main__.sock.settimeout( 245 )
 	termcolor.cprint( "Connecting to: " + __main__.database['api']['ircsettings']['network'] + ":" + str( __main__.database['api']['ircsettings']['port'] ), "magenta" )
 	
 	connected = False
@@ -32,7 +34,7 @@ def connect():
 		try:
 			__main__.sock.connect( ( __main__.database['api']['ircsettings']['network'], __main__.database['api']['ircsettings']['port'] ) )
 			connected = True
-		except TimeoutError:
+		except socket.timeout:
 			print( "Timeout error! Retrying..." )
 	
 	termcolor.cprint( "Connected.", "magenta", attrs=['bold'] )

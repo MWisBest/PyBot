@@ -758,6 +758,7 @@ def init():
 	if rebooted != 0:
 		sock.shutdown( socket.SHUT_RDWR )
 		sock.close()
+		sock = socket.socket()
 		chanJoined = False
 		loggedIn = False
 	
@@ -769,7 +770,7 @@ init()	# Bot initiates here
 
 
 def main():
-	global API, sock, database, loggedIn, chanJoined
+	global API, sock, database, loggedIn, chanJoined, rebooted
 	while True:
 		try:
 			data = sock.recv( 8192 ).decode( errors="ignore" )
@@ -794,10 +795,10 @@ def main():
 							API.handleAPIPacket( x )
 						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
 							threading.Thread( target=chanJoin() ).start()
-		#except OSError:
-		#	errorprint( "Error! Attempting to reconect..." )
-		#	rebooted = 1
-		#	init()
+		except socket.timeout:
+			errorprint( "Timeout! Attempting to reconect..." )
+			rebooted = 1
+			init()
 		except KeyboardInterrupt:
 			sock.close()
 			exit()
