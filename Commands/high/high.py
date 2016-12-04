@@ -25,5 +25,5 @@ def command( message, user, recvfrom ):
 	thehigh = fixHTMLChars( strbetween( requests.get( "http://www.thathigh.com/random" ).text, "<p>", "</p>" ) )
 	if thehigh == "":
 		thehigh = "When you can't find that high..."
-	__main__.sendMessage( thehigh, recvfrom ) 
+	__main__.sendMessage( thehigh, recvfrom )
 	return True
