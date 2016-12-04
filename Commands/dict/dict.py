@@ -26,7 +26,7 @@ def command( message, user, recvfrom ):
 	definition = fixHTMLChars( strbetween( txt, "direction=\"target\">", "<span" ) )
 	type = fixHTMLChars( strbetween( txt, "style=\"color:#B50000;\" direction=\"\">", "<span" ) )
 	if definition != "":
-			__main__.sendMessage( message + ": " + type + " - " + definition, recvfrom )
+		__main__.sendMessage( message + ": " + type + " - " + definition, recvfrom )
 	else:
 		__main__.sendMessage( message + " was not found.", recvfrom )
 	return True
