@@ -151,7 +151,7 @@ def recvprint( packet ):
 						modesassigned = []
 						i = len( modeassigned )
 						while i > 0:
-							i = i - 1
+							i -= 1
 							modesassigned.append( modeassigned[i] )
 						modesassigned.reverse() # I'm too lazy to reverse the loop above. lel.
 						usergivento = chanRest[2].rpartition( " " )[2]
