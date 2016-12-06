@@ -287,6 +287,8 @@ def handlePackets( packet ):
 				sendMessage( "pong!", locfrom )
 			elif args[0] == "pong":
 				sendMessage( "FUCK YOU! ONLY I PONG!", locfrom )
+			elif args[0] == "help":
+				sendMessage( "https://github.com/MWisBest/PyBot", locfrom )
 			elif args[0] == "access":
 				accessHandler( args[2], user, locfrom )
 			elif args[0] == "ban" and myAccess >= 2:
