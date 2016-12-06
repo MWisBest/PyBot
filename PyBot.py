@@ -280,8 +280,12 @@ def handlePackets( packet ):
 					sendMessage( "Usage: cmdto [location] [command] <args>", locfrom )
 					return
 			if args[0] == "say":
-				sendMessage( args[2], locfrom )
+				if args[2] != "":
+					sendMessage( args[2], locfrom )
+				else:
+					sendMessage( "Usage: say [message]", locfrom )
 			elif args[0] == "me":
+				# NOTE: sendMe actually works with an empty message
 				sendMe( args[2], locfrom )
 			elif args[0] == "ping":
 				sendMessage( "pong!", locfrom )
