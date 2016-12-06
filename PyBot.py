@@ -267,14 +267,22 @@ def handlePackets( packet ):
 			message = message[1:]
 			args = list( message.partition( " " ) )
 			args[0] = args[0].lower()
+			if args[0] == "cmdto" and myAccess >= 2:
+				argssplit = args[2].split( " ", maxsplit=2 )
+				if len( argssplit ) >= 2 and "" not in argssplit:
+					locfrom = argssplit[0]
+					args[0] = argssplit[1].lower()
+					if len( argssplit ) == 3:
+						args[2] = argssplit[2]
+					else:
+						args[2] = ""
+				else:
+					sendMessage( "Usage: cmdto [location] [command] <args>", locfrom )
+					return
 			if args[0] == "say":
 				sendMessage( args[2], locfrom )
 			elif args[0] == "me":
 				sendMe( args[2], locfrom )
-			elif args[0] == "sayto" and myAccess >= 1:
-				sendMessage( args[2].partition( " " )[2], args[2].partition( " " )[0] )
-			elif args[0] == "meto" and myAccess >= 1:
-				sendMe( args[2].partition( " " )[2], args[2].partition( " " )[0] )
 			elif args[0] == "ping":
 				sendMessage( "pong!", locfrom )
 			elif args[0] == "pong":
