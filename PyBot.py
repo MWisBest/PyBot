@@ -501,24 +501,20 @@ def toggleReverse( args, recvfrom ):
 	# Flip it with empty args
 	if args == "":
 		database['globals']['reverse'] = not database['globals']['reverse']
-		if database['globals']['reverse']:
-			sendMessage( "Reverse: Enabled.", recvfrom )
-		else:
-			sendMessage( "Reverse: Disabled.", recvfrom )
-		saveDatabase()
-		return True
 	elif args == "on" or args == "true":
 		database['globals']['reverse'] = True
-		sendMessage( "Reverse: Enabled.", recvfrom )
-		saveDatabase()
-		return True
 	elif args == "off" or args == "false":
 		database['globals']['reverse'] = False
-		sendMessage( "Reverse: Disabled.", recvfrom )
-		saveDatabase()
-		return True
-	sendMessage( "Usage: reverse <on/true/off/false>", recvfrom )
-	return False
+	else:
+		sendMessage( "Usage: reverse <on/true/off/false>", recvfrom )
+		return False
+	
+	if database['globals']['reverse']:
+		sendMessage( "Reverse: enabled.", recvfrom )
+	else:
+		sendMessage( "Reverse: disabled.", recvfrom )
+	saveDatabase()
+	return True
 
 def toggleAway( message, recvfrom ):
 	global away, database
