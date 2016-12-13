@@ -27,7 +27,7 @@ def command( message, user, recvfrom ):
 	message = message.strip().lower()
 	if message in signs:
 		txt = requests.get( "http://www.astrology.com/horoscope/daily/" + message + ".html" ).text
-		horoscope = fixHTMLCharsAdvanced( strbetween( txt, "<div class=\"page-horoscope-text\">", "</div>" ) )
+		horoscope = fixHTMLCharsAdvanced( strbetween( strbetween( txt, "<div class=\"page-horoscope-text\" style=\"", "<div" ), ">", "</div>" ) )
 		if horoscope != "":
 			__main__.sendMessage( horoscope, recvfrom )
 		else:
