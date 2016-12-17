@@ -18,7 +18,7 @@
 import __main__, re, threading, urllib.request####, requests ### see below urlopen stuff
 from pybotutils import fixHTMLCharsAdvanced, strbetween
 
-info = { "access" : 0, "packets" : [ "PRIVMSG" ], "version" : 2 }
+info = { "access" : 0, "packets" : [ "PRIVMSG" ], "apis" : [ "irc" ], "version" : 3 }
 
 urlregex = re.compile( r"(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:[a-z]{2,13})(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:[a-z]{2,13})\b/?(?!@))))" )
 linkdata = ""

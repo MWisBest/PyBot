@@ -234,8 +234,11 @@ def sendPacket( packet, forceDebugPrint=False ):
 def reboot():
 	global API, sock, pyBotVersion
 	API.onReboot()
-	sock.shutdown( socket.SHUT_RDWR )
-	sock.close()
+	try:
+		sock.shutdown( socket.SHUT_RDWR )
+		sock.close()
+	except OSError: # socket already closed or something
+		pass
 	os.execl( sys.executable, sys.executable, * sys.argv )
 
 def reconnect():
@@ -359,10 +362,14 @@ def externalCommands( cmdused, message, user, recvfrom, accessLevel ):
 	return False
 
 def externalHandlers( packet ):
-	global handlerdict
+	global database, handlerdict
 	for key in handlerdict.keys():
 		try: # so we can continue through the loop on fuck ups
-			if packet['command'] in handlerdict[key]['packets']:
+			if handlerdict[key]['version'] >= 3:
+				if database['api']['system'] in handlerdict[key]['apis'] and packet['command'] in handlerdict[key]['packets']:
+					# I hate eval, but this should be secure enough
+					eval( key + ".handle( packet )" )
+			elif database['api']['system'] == "irc" and packet['command'] in handlerdict[key]['packets']:
 				# I hate eval, but this should be secure enough
 				eval( key + ".handle( packet )" )
 		except: # fix your shit
@@ -778,43 +785,7 @@ def init():
 
 init()	# Bot initiates here
 
-
-def main():
-	global API, sock, database, loggedIn, chanJoined, rebooted
-	while True:
-		try:
-			data = sock.recv( 8192 ).decode( errors="ignore" )
-			if len( data ) > 2:	# Don't parse small stuff
-				if data.count( "\n" ) <= 1:
-					data = makePacket( data, inbound=True )
-					recvprint( data )
-					threading.Thread( target=handlePackets( data ) ).start()
-					# Voodoo magic: if API handles packet, wait for next packet to do channel join.
-					if data['command'] in API.apiHandledPackets:
-						API.handleAPIPacket( data )
-					elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in data['raw'] ):
-						threading.Thread( target=chanJoin() ).start()
-				else: # More than 1 packet sent, most likely start connection
-					data = data.splitlines()
-					for x in data:
-						x = makePacket( x, inbound=True )
-						if database['globals']['debug']:
-							recvprint( x )
-						# Voodoo magic: if API handles packet, wait for next packet to do channel join.
-						if x['command'] in API.apiHandledPackets:
-							API.handleAPIPacket( x )
-						elif ( not chanJoined ) and ( loggedIn ) and ( not "NOTICE" in x['raw'] ):
-							threading.Thread( target=chanJoin() ).start()
-		except socket.timeout:
-			errorprint( "Timeout! Attempting to reconect..." )
-			rebooted = 1
-			init()
-		except KeyboardInterrupt:
-			sock.close()
-			exit()
-
-
-mainThread = threading.Thread( target=main(), daemon=False, name="[PyBot] Main Thread" )
+mainThread = threading.Thread( target=API.mainThread(), daemon=False, name="[PyBot] Main Thread" )
 mainThread.start()
 #main()
 ## CORE BOT ##

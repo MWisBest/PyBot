@@ -18,7 +18,7 @@
 import __main__, time
 from pybotutils import strbetween
 
-info = { "access" : 0, "packets" : [ "PRIVMSG" ], "version" : 2 }
+info = { "access" : 0, "packets" : [ "PRIVMSG" ], "apis" : [ "irc" ], "version" : 3 }
 
 def handle( packet ):
 	try:

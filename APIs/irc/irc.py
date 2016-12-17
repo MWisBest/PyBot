@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License     ##
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>. ##
 ###########################################################################
-import __main__, base64, socket, termcolor
+import __main__, base64, socket, termcolor, threading
 
 info = { "pretty_name" : "IRC", "version" : 1 }
 
@@ -97,3 +97,37 @@ def handleCAPs( packet ):
 			__main__.loggedIn = True
 			return True
 	return False
+
+
+def mainThread():
+	while True:
+		try:
+			data = __main__.sock.recv( 8192 ).decode( errors="ignore" )
+			if len( data ) > 2:	# Don't parse small stuff
+				if data.count( "\n" ) <= 1:
+					data = __main__.makePacket( data, inbound=True )
+					__main__.recvprint( data )
+					threading.Thread( target=__main__.handlePackets( data ) ).start()
+					# Voodoo magic: if API handles packet, wait for next packet to do channel join.
+					if data['command'] in __main__.API.apiHandledPackets:
+						__main__.API.handleAPIPacket( data )
+					elif ( not __main__.chanJoined ) and ( __main__.loggedIn ) and ( not "NOTICE" in data['raw'] ):
+						threading.Thread( target=__main__.chanJoin() ).start()
+				else: # More than 1 packet sent, most likely start connection
+					data = data.splitlines()
+					for x in data:
+						x = __main__.makePacket( x, inbound=True )
+						if __main__.database['globals']['debug']:
+							__main__.recvprint( x )
+						# Voodoo magic: if API handles packet, wait for next packet to do channel join.
+						if x['command'] in __main__.API.apiHandledPackets:
+							__main__.API.handleAPIPacket( x )
+						elif ( not __main__.chanJoined ) and ( __main__.loggedIn ) and ( not "NOTICE" in x['raw'] ):
+							threading.Thread( target=__main__.chanJoin() ).start()
+		except socket.timeout:
+			__main__.errorprint( "Timeout! Attempting to reconect..." )
+			__main__.rebooted = 1
+			__main__.init()
+		except KeyboardInterrupt:
+			__main__.sock.close()
+			exit()
